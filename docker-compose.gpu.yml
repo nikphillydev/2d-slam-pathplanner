@@ -1,6 +1,5 @@
 # This file is meant to be merged with the normal docker-compose.yml to enable NVIDIA GPU usage in the container 
 
-version: "3.8"
 services:
   project312:
     deploy:

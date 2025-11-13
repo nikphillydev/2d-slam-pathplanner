@@ -21,4 +21,4 @@ in the newly created Docker container.
 
 To get a shell in the running container:
 
-```docker-compose -it project312 /bin/bash```
+```docker exec -it project312 /bin/bash```

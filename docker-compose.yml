@@ -1,4 +1,3 @@
-version: "3.8"
 services:           # define all containers
   project312:
     container_name: project312      # friendly name for container
