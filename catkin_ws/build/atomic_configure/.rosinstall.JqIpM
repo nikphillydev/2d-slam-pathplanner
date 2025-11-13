@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/user/2d-slam-pathplanner/catkin_ws/devel/setup.sh

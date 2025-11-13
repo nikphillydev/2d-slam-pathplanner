@@ -1,0 +1,17 @@
+version: "3.8"
+services:           # define all containers
+  project312:
+    container_name: project312      # friendly name for container
+    build:                          # build image from Dockerfile
+      context: .
+      dockerfile: Dockerfile
+    tty: true                       # enable interactive sessions in the container
+    network_mode: host              # share host networking stack; container uses host IP address
+    privileged: true                # give container extended privileges on the host machine
+    environment:                    # pass env variables from host into container
+      DISPLAY: ${DISPLAY}                # pass host DISPLAY variable into container; tells X clients (in container) where to find the X server (on host)
+      DISABLE_ROS1_EOL_WARNINGS: 1       # ignore ROS1 end-of-life warning pop-ups
+    volumes:                        # mount directories from host into the container
+      - /tmp/.X11-unix:/tmp/.X11-unix     # share host X11 sockets with the container; enables IPC between X clients (in container) and the X server (on host)
+      - ./catkin_ws:/root/catkin_ws       # mount ROS workspace inside the container; enables live edits between container and host
+    command: /bin/bash              # command when container starts
