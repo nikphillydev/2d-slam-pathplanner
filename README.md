@@ -5,7 +5,7 @@ A custom implementation of both
 
 Developed on Clearpath Jackal robot platform.
 
-### Docker Setup
+### Running the Project
 This project uses Docker and VSCode Dev Containers to containerize the development process.
 
 - On a machine WITHOUT a NVIDIA GPU:
