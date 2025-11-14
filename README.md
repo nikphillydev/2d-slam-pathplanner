@@ -22,3 +22,15 @@ in the newly created Docker container.
 To get a shell in the running container:
 
 ```docker exec -it project312 /bin/bash```
+
+To stop the container:
+
+```docker-compose down```
+
+To run the gazebo simulation:
+
+```roslaunch jackal_gazebo jackal_world.launch```
+
+To run the Rviz visualization:
+
+```roslaunch jackal_viz view_robot.launch```
