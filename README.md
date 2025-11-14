@@ -22,7 +22,6 @@ in the newly created Docker container.
 To get a shell in the running container:
 
 ```docker exec -it project312 /bin/bash```
-<<<<<<< HEAD
 
 To stop the container:
 
@@ -35,5 +34,3 @@ To run the gazebo simulation:
 To run the Rviz visualization:
 
 ```roslaunch jackal_viz view_robot.launch```
-=======
->>>>>>> 34100b69a49dd7e63eb2679d0e34f467ade0ba81
