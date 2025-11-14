@@ -16,7 +16,7 @@ This project uses Docker and VSCode Dev Containers to containerize the developme
 
 ```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d```
 
-Once the container is running (you may verify with command ```docker ps```), use VSCode `Dev Containers: Attach to running container...` to open the project
+Once the container is running (you may verify with command ```docker ps```), use VSCode **Dev Containers: Attach to running container...** to open the project
 in the newly created Docker container.
 
 To get a shell in the running container:
