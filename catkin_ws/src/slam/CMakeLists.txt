@@ -19,11 +19,12 @@ catkin_package()
 ## Specify locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+  ${PROJECT_SOURCE_DIR}/include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ executable
-add_executable(slam_node src/slam_node.cpp)
+add_executable(slam_node src/main.cpp src/local_slam_node.cpp)
 
 ## Specify libraries to link executable target against
 target_link_libraries(slam_node

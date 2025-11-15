@@ -857,32 +857,59 @@ rosgraph_msgs_generate_messages_nodejs/fast:
 	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/rosgraph_msgs_generate_messages_nodejs.dir/build.make slam/CMakeFiles/rosgraph_msgs_generate_messages_nodejs.dir/build
 .PHONY : rosgraph_msgs_generate_messages_nodejs/fast
 
-src/slam_node.o: src/slam_node.cpp.o
+src/local_slam_node.o: src/local_slam_node.cpp.o
 
-.PHONY : src/slam_node.o
+.PHONY : src/local_slam_node.o
 
 # target to build an object file
-src/slam_node.cpp.o:
-	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.o
-.PHONY : src/slam_node.cpp.o
+src/local_slam_node.cpp.o:
+	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o
+.PHONY : src/local_slam_node.cpp.o
 
-src/slam_node.i: src/slam_node.cpp.i
+src/local_slam_node.i: src/local_slam_node.cpp.i
 
-.PHONY : src/slam_node.i
+.PHONY : src/local_slam_node.i
 
 # target to preprocess a source file
-src/slam_node.cpp.i:
-	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.i
-.PHONY : src/slam_node.cpp.i
+src/local_slam_node.cpp.i:
+	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.i
+.PHONY : src/local_slam_node.cpp.i
 
-src/slam_node.s: src/slam_node.cpp.s
+src/local_slam_node.s: src/local_slam_node.cpp.s
 
-.PHONY : src/slam_node.s
+.PHONY : src/local_slam_node.s
 
 # target to generate assembly for a file
-src/slam_node.cpp.s:
-	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.s
-.PHONY : src/slam_node.cpp.s
+src/local_slam_node.cpp.s:
+	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.s
+.PHONY : src/local_slam_node.cpp.s
+
+src/main.o: src/main.cpp.o
+
+.PHONY : src/main.o
+
+# target to build an object file
+src/main.cpp.o:
+	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
+
+src/main.i: src/main.cpp.i
+
+.PHONY : src/main.i
+
+# target to preprocess a source file
+src/main.cpp.i:
+	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
+
+src/main.s: src/main.cpp.s
+
+.PHONY : src/main.s
+
+# target to generate assembly for a file
+src/main.cpp.s:
+	cd /root/catkin_ws/build && $(MAKE) -f slam/CMakeFiles/slam_node.dir/build.make slam/CMakeFiles/slam_node.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
 
 # Help Target
 help:
@@ -943,9 +970,12 @@ help:
 	@echo "... actionlib_generate_messages_cpp"
 	@echo "... actionlib_msgs_generate_messages_py"
 	@echo "... rosgraph_msgs_generate_messages_nodejs"
-	@echo "... src/slam_node.o"
-	@echo "... src/slam_node.i"
-	@echo "... src/slam_node.s"
+	@echo "... src/local_slam_node.o"
+	@echo "... src/local_slam_node.i"
+	@echo "... src/local_slam_node.s"
+	@echo "... src/main.o"
+	@echo "... src/main.i"
+	@echo "... src/main.s"
 .PHONY : help
 
 
