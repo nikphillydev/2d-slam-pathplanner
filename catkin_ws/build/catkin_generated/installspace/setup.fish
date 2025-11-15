@@ -18,7 +18,7 @@ if not type -q bass
 end
 
 if test -z $_CATKIN_SETUP_DIR
-    set _CATKIN_SETUP_DIR /home/user/2d-slam-pathplanner/catkin_ws/install
+    set _CATKIN_SETUP_DIR /root/catkin_ws/install
 end
 
 set _SETUP_UTIL "$_CATKIN_SETUP_DIR/_setup_util.py"
