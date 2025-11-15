@@ -5,7 +5,7 @@ A custom implementation of both
 
 Developed on Clearpath Jackal robot platform.
 
-### Docker Setup
+### Running the Project
 This project uses Docker and VSCode Dev Containers to containerize the development process.
 
 - On a machine WITHOUT a NVIDIA GPU:
@@ -16,9 +16,21 @@ This project uses Docker and VSCode Dev Containers to containerize the developme
 
 ```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d```
 
-Once the container is running (you may verify with command ```docker ps```), use VSCode `Dev Containers: Attach to running container...` to open the project
+Once the container is running (you may verify with command ```docker ps```), use VSCode **Dev Containers: Attach to running container...** to open the project
 in the newly created Docker container.
 
 To get a shell in the running container:
 
 ```docker exec -it project312 /bin/bash```
+
+To stop the container:
+
+```docker-compose down```
+
+To run the gazebo simulation:
+
+```roslaunch jackal_gazebo jackal_world.launch```
+
+To run the Rviz visualization:
+
+```roslaunch jackal_viz view_robot.launch```
