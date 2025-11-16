@@ -18,8 +18,8 @@ public:
     void odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg);
 
     // getters / setters
-    sensor_msgs::LaserScan get_current_laser_scan();
-    nav_msgs::Odometry get_current_odom_filtered();
+    sensor_msgs::LaserScan get_laser_scan();
+    nav_msgs::Odometry get_odom_filtered();
 
     // worker thread
     void slam_thread();
@@ -41,9 +41,14 @@ private:
 
     // --- slam internal state ---
 
+    // slam algorithm input
     std::mutex _laser_scan_mutex;
-    sensor_msgs::LaserScan _current_laser_scan;
-    
+    sensor_msgs::LaserScan _laser_scan;         // laser scan from LiDAR
     std::mutex _odom_filtered_mutex;
-    nav_msgs::Odometry _current_odom_filtered;
+    nav_msgs::Odometry _odom_filtered;          // odometry from ekf
+    nav_msgs::Odometry _last_odom_filtered;
+
+    // slam algorithm output
+    nav_msgs::Odometry _odom_slam;              // odometry
+    nav_msgs::OccupancyGrid _map;               // dynamic map
 };

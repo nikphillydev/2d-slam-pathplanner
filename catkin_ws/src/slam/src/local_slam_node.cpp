@@ -29,26 +29,26 @@ LocalSlamNode::~LocalSlamNode()
 void LocalSlamNode::front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
 {
     std::lock_guard<std::mutex> lock(_laser_scan_mutex);
-    _current_laser_scan = std::move(*msg);
+    _laser_scan = std::move(*msg);
 }
 
 void LocalSlamNode::odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg)
 {
     std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
-    _current_odom_filtered = std::move(*msg);
+    _odom_filtered = std::move(*msg);
 }
 
-sensor_msgs::LaserScan LocalSlamNode::get_current_laser_scan()
+sensor_msgs::LaserScan LocalSlamNode::get_laser_scan()
 {
     std::lock_guard<std::mutex> lock(_laser_scan_mutex);
-    return _current_laser_scan;
+    return _laser_scan;
 }
 
 
-nav_msgs::Odometry LocalSlamNode::get_current_odom_filtered()
+nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
 {
     std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
-    return _current_odom_filtered;
+    return _odom_filtered;
 }
 
 void LocalSlamNode::slam_thread()
@@ -58,11 +58,11 @@ void LocalSlamNode::slam_thread()
     {
         ROS_INFO("slam thread running");
 
-        sensor_msgs::LaserScan new_scan = get_current_laser_scan();
-        nav_msgs::Odometry new_odom = get_current_odom_filtered();
+        sensor_msgs::LaserScan laser_scan = get_laser_scan();
+        nav_msgs::Odometry odom_filtered = get_odom_filtered();
 
         std::stringstream debug;
-        debug << "Laser scan: " << new_scan.header.stamp << " Odometry: " << new_odom.header.stamp << std::endl;
+        debug << "Laser scan: " << laser_scan.header.stamp << " Odometry: " << odom_filtered.header.stamp << std::endl;
         ROS_INFO("%s", debug.str().c_str());
 
         loop_rate.sleep();
