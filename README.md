@@ -34,3 +34,42 @@ To run the gazebo simulation:
 To run the Rviz visualization:
 
 ```roslaunch jackal_viz view_robot.launch```
+
+### Ceres Solver
+This project uses Ceres Solver for optimization in the SLAM implementation.
+
+[Ceres Solver](http://ceres-solver.org/installation.html)
+#### Install Ceres Solver dependencies
+```
+sudo apt-get update
+# google-glog + gflags
+sudo apt-get install libgoogle-glog-dev libgflags-dev
+# Use ATLAS for BLAS & LAPACK
+sudo apt-get install libatlas-base-dev
+# Eigen3
+sudo apt-get install libeigen3-dev
+# SuiteSparse (optional)
+sudo apt-get install libsuitesparse-dev
+```
+
+#### Build and Install Ceres Solver
+```
+sudo apt-get install libceres-dev
+```
+ #### Test Ceres Solver installation
+ '''
+ dpkg -L libceres-dev | head
+ '''
+
+I have written the apt into the Dockerfile to install Ceres Solver in the Docker container.
+
+### Rebuild the Docker Container
+
+First stop and remove the existing container:
+
+```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml down```
+
+Then rebuild the container with:
+
+```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build```
+
