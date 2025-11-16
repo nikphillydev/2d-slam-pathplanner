@@ -7,6 +7,12 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-jackal-desktop \
     ros-noetic-jackal-simulator \
     ros-noetic-jackal-navigation \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libatlas-base-dev \
+    libeigen3-dev \
+    libsuitesparse-dev \
+    libceres-dev \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
