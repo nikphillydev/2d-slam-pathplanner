@@ -12,7 +12,7 @@ This project uses Docker and VSCode Dev Containers to containerize the developme
 
 ```docker-compose up -d```
 
-- On a machine WITH a NVIDIA GPU:
+- On a machine WITH a NVIDIA GPU (must have nvidia-container-toolkit installed):
 
 ```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d```
 
