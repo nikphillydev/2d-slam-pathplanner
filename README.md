@@ -73,3 +73,4 @@ Then rebuild the container with:
 
 ```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build```
 
+[Bicubic interpolation](https://en.wikipedia.org/wiki/Bicubic_interpolation)
