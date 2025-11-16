@@ -30,13 +30,17 @@ To stop the container:
 ### Running the Project
 Open a shell in the running Docker container.
 
-To launch the Jackal robot in the Gazebo simulation:
+ - to launch the Jackal robot in the Gazebo simulation
 
 ```roslaunch jackal_gazebo jackal_world.launch```
 
-To launch the Rviz visualization:
+ - to launch the Rviz visualization:
 
 ```roslaunch jackal_viz view_robot.launch```
+
+ - to launch our custom SLAM package:
+ 
+ - to launch our custom Path Planner package:
 
 ### Ceres Solver
 This project uses Ceres Solver for optimization in the SLAM implementation.
