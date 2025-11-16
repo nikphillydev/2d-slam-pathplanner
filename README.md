@@ -56,4 +56,20 @@ sudo apt-get install libsuitesparse-dev
 ```
 sudo apt-get install libceres-dev
 ```
+ #### Test Ceres Solver installation
+ '''
+ dpkg -L libceres-dev | head
+ '''
+
+I have written the apt into the Dockerfile to install Ceres Solver in the Docker container.
+
+### Rebuild the Docker Container
+
+First stop and remove the existing container:
+
+```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml down```
+
+Then rebuild the container with:
+
+```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build```
 
