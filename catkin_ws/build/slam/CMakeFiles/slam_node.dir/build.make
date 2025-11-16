@@ -57,27 +57,42 @@ include slam/CMakeFiles/slam_node.dir/progress.make
 # Include the compile flags for this target's objects.
 include slam/CMakeFiles/slam_node.dir/flags.make
 
-slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.o: slam/CMakeFiles/slam_node.dir/flags.make
-slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.o: /root/catkin_ws/src/slam/src/slam_node.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.o"
-	cd /root/catkin_ws/build/slam && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/slam_node.dir/src/slam_node.cpp.o -c /root/catkin_ws/src/slam/src/slam_node.cpp
+slam/CMakeFiles/slam_node.dir/src/main.cpp.o: slam/CMakeFiles/slam_node.dir/flags.make
+slam/CMakeFiles/slam_node.dir/src/main.cpp.o: /root/catkin_ws/src/slam/src/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object slam/CMakeFiles/slam_node.dir/src/main.cpp.o"
+	cd /root/catkin_ws/build/slam && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/slam_node.dir/src/main.cpp.o -c /root/catkin_ws/src/slam/src/main.cpp
 
-slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/slam_node.dir/src/slam_node.cpp.i"
-	cd /root/catkin_ws/build/slam && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/catkin_ws/src/slam/src/slam_node.cpp > CMakeFiles/slam_node.dir/src/slam_node.cpp.i
+slam/CMakeFiles/slam_node.dir/src/main.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/slam_node.dir/src/main.cpp.i"
+	cd /root/catkin_ws/build/slam && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/catkin_ws/src/slam/src/main.cpp > CMakeFiles/slam_node.dir/src/main.cpp.i
 
-slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/slam_node.dir/src/slam_node.cpp.s"
-	cd /root/catkin_ws/build/slam && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/catkin_ws/src/slam/src/slam_node.cpp -o CMakeFiles/slam_node.dir/src/slam_node.cpp.s
+slam/CMakeFiles/slam_node.dir/src/main.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/slam_node.dir/src/main.cpp.s"
+	cd /root/catkin_ws/build/slam && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/catkin_ws/src/slam/src/main.cpp -o CMakeFiles/slam_node.dir/src/main.cpp.s
+
+slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o: slam/CMakeFiles/slam_node.dir/flags.make
+slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o: /root/catkin_ws/src/slam/src/local_slam_node.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/root/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o"
+	cd /root/catkin_ws/build/slam && /usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o -c /root/catkin_ws/src/slam/src/local_slam_node.cpp
+
+slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/slam_node.dir/src/local_slam_node.cpp.i"
+	cd /root/catkin_ws/build/slam && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /root/catkin_ws/src/slam/src/local_slam_node.cpp > CMakeFiles/slam_node.dir/src/local_slam_node.cpp.i
+
+slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/slam_node.dir/src/local_slam_node.cpp.s"
+	cd /root/catkin_ws/build/slam && /usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /root/catkin_ws/src/slam/src/local_slam_node.cpp -o CMakeFiles/slam_node.dir/src/local_slam_node.cpp.s
 
 # Object files for target slam_node
 slam_node_OBJECTS = \
-"CMakeFiles/slam_node.dir/src/slam_node.cpp.o"
+"CMakeFiles/slam_node.dir/src/main.cpp.o" \
+"CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o"
 
 # External object files for target slam_node
 slam_node_EXTERNAL_OBJECTS =
 
-/root/catkin_ws/devel/lib/slam/slam_node: slam/CMakeFiles/slam_node.dir/src/slam_node.cpp.o
+/root/catkin_ws/devel/lib/slam/slam_node: slam/CMakeFiles/slam_node.dir/src/main.cpp.o
+/root/catkin_ws/devel/lib/slam/slam_node: slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o
 /root/catkin_ws/devel/lib/slam/slam_node: slam/CMakeFiles/slam_node.dir/build.make
 /root/catkin_ws/devel/lib/slam/slam_node: /opt/ros/noetic/lib/libtf2_ros.so
 /root/catkin_ws/devel/lib/slam/slam_node: /opt/ros/noetic/lib/libactionlib.so
@@ -101,7 +116,7 @@ slam_node_EXTERNAL_OBJECTS =
 /root/catkin_ws/devel/lib/slam/slam_node: /usr/lib/x86_64-linux-gnu/libboost_thread.so.1.71.0
 /root/catkin_ws/devel/lib/slam/slam_node: /usr/lib/x86_64-linux-gnu/libconsole_bridge.so.0.4
 /root/catkin_ws/devel/lib/slam/slam_node: slam/CMakeFiles/slam_node.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/root/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable /root/catkin_ws/devel/lib/slam/slam_node"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/root/catkin_ws/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable /root/catkin_ws/devel/lib/slam/slam_node"
 	cd /root/catkin_ws/build/slam && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/slam_node.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
