@@ -34,3 +34,33 @@ To run the gazebo simulation:
 To run the Rviz visualization:
 
 ```roslaunch jackal_viz view_robot.launch```
+
+### Ceres Solver
+This project uses Ceres Solver for optimization in the SLAM implementation.
+
+[Ceres Solver](http://ceres-solver.org/installation.html)
+#### Install Ceres Solver dependencies
+```
+# google-glog + gflags
+sudo apt-get install libgoogle-glog-dev libgflags-dev
+# Use ATLAS for BLAS & LAPACK
+sudo apt-get install libatlas-base-dev
+# Eigen3
+sudo apt-get install libeigen3-dev
+# SuiteSparse (optional)
+sudo apt-get install libsuitesparse-dev
+```
+#### Build and Install Ceres Solver
+```
+tar zxf ceres-solver-2.2.0.tar.gz
+mkdir ceres-bin
+cd ceres-bin
+cmake ../ceres-solver-2.2.0
+make -j3
+make test
+# Optionally install Ceres, it can also be exported using CMake which
+# allows Ceres to be used without requiring installation, see the documentation
+# for the EXPORT_BUILD_DIR option for more information.
+make install
+```
+
