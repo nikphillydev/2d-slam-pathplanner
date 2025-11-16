@@ -20,7 +20,7 @@ catkin_package()
 ## Your package locations should be listed before other locations
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
-  ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}                  # created by find_package()
 )
 
 ## Declare a C++ executable
@@ -28,10 +28,10 @@ add_executable(slam_node src/main.cpp src/local_slam_node.cpp)
 
 ## Specify libraries to link executable target against
 target_link_libraries(slam_node
-  ${catkin_LIBRARIES}
+  ${catkin_LIBRARIES}                     # created by find_package()
 )
 
 ## Add cmake target dependencies of the executable
 add_dependencies(slam_node 
   ${${PROJECT_NAME}_EXPORTED_TARGETS}     # list of message/service/action generation targets defined within your own package
-  ${catkin_EXPORTED_TARGETS})             # list of message/service/action generation targets from all the other catkin packages you depend on (in find_package)
+  ${catkin_EXPORTED_TARGETS})             # list of message/service/action generation targets from all the other catkin packages you depend on in find_package()

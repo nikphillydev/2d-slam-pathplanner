@@ -26,30 +26,7 @@ LocalSlamNode::~LocalSlamNode()
     ROS_INFO("LocalSlamNode has stopped");
 }
 
-void LocalSlamNode::front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
-{
-    std::lock_guard<std::mutex> lock(_laser_scan_mutex);
-    _laser_scan = std::move(*msg);
-}
-
-void LocalSlamNode::odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg)
-{
-    std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
-    _odom_filtered = std::move(*msg);
-}
-
-sensor_msgs::LaserScan LocalSlamNode::get_laser_scan()
-{
-    std::lock_guard<std::mutex> lock(_laser_scan_mutex);
-    return _laser_scan;
-}
-
-
-nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
-{
-    std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
-    return _odom_filtered;
-}
+// --- worker thread ---
 
 void LocalSlamNode::slam_thread()
 {
@@ -67,4 +44,33 @@ void LocalSlamNode::slam_thread()
 
         loop_rate.sleep();
     }
+}
+
+// --- ros callbacks ---
+
+void LocalSlamNode::front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+    std::lock_guard<std::mutex> lock(_laser_scan_mutex);
+    _laser_scan = std::move(*msg);
+}
+
+void LocalSlamNode::odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg)
+{
+    std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
+    _odom_filtered = std::move(*msg);
+}
+
+// --- getters / setters ---
+
+sensor_msgs::LaserScan LocalSlamNode::get_laser_scan()
+{
+    std::lock_guard<std::mutex> lock(_laser_scan_mutex);
+    return _laser_scan;
+}
+
+
+nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
+{
+    std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
+    return _odom_filtered;
 }

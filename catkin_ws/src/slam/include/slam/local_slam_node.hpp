@@ -13,6 +13,9 @@ public:
     LocalSlamNode();
     ~LocalSlamNode();
 
+    // worker thread
+    void slam_thread();
+
     // ros callbacks
     void front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg);
     void odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg);
@@ -20,9 +23,6 @@ public:
     // getters / setters
     sensor_msgs::LaserScan get_laser_scan();
     nav_msgs::Odometry get_odom_filtered();
-
-    // worker thread
-    void slam_thread();
 
 private:
     // ros node handle
