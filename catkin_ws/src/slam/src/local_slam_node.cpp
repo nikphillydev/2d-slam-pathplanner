@@ -2,15 +2,15 @@
 
 LocalSlamNode::LocalSlamNode() 
 {
-    // subscribers
+    // create subscribers
     _front_scan_sub = _nh.subscribe<sensor_msgs::LaserScan>("/front/scan", 1000, &LocalSlamNode::front_scan_callback, this);
     _odom_filtered_sub = _nh.subscribe<nav_msgs::Odometry>("/odometry/filtered", 1000, &LocalSlamNode::odom_filtered_callback, this);
 
-    // publishers
+    // create publishers
     _odom_slam_pub = _nh.advertise<nav_msgs::Odometry>("/odometry/slam", 1000);
     _map_slam_pub = _nh.advertise<nav_msgs::OccupancyGrid>("/map/slam", 1000);
 
-    // thread
+    // start worker thread
     _slam_thread_handle = std::thread(&LocalSlamNode::slam_thread, this);
 
     ROS_INFO("LocalSlamNode has started");
