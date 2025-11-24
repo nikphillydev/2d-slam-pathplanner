@@ -293,3 +293,20 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud){
         }
     }
 }
+
+nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid(){
+    nav_msgs::OccupancyGrid occupancy_grid;
+    occupancy_grid.header = _double_map.header;
+    occupancy_grid.info = _double_map.info;
+    occupancy_grid.data.resize(_double_map.data.size());
+
+    for (size_t i = 0; i < _double_map.data.size(); ++i){
+        if (_double_map.data[i] == -1){
+            occupancy_grid.data[i] = -1; // Unknown
+        }
+        else{
+            occupancy_grid.data[i] = static_cast<int8_t>(clamp(_double_map.data[i] * 100)); // Convert to [0, 100]
+        }
+    }
+    return occupancy_grid;
+}

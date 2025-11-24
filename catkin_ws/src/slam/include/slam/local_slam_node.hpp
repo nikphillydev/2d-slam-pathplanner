@@ -8,22 +8,19 @@
 #include "sensor_msgs/PointCloud.h"
 #include "nav_msgs/Odometry.h"
 #include "nav_msgs/OccupancyGrid.h"
-<<<<<<< HEAD
+
 #include "geometry_msgs/TransformStamped.h"
 #include "geometry_msgs/Point32.h"
 #include "geometry_msgs/Point.h"
-=======
-<<<<<<< HEAD
+
 #include "geometry_msgs/TransformStamped.h"
 #include "geometry_msgs/Point32.h"
 #include "geometry_msgs/Point.h"
-=======
 #include "tf2/utils.h"
 #include "tf2/LinearMath/Transform.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "slam/DoubleOccupancyGrid.h"
->>>>>>> b1bf35486e989f92950135d021356fb7a36e480e
->>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
+
 
 #include <thread>
 #include <mutex>
@@ -57,6 +54,7 @@ public:
     void init_map();
     int world_to_map_index(double x, double y);
     void update_map(const sensor_msgs::LaserScan& scan, const nav_msgs::Odometry& pose);
+    nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid();
 
 private:
     // ros node handle
@@ -69,21 +67,14 @@ private:
     // ros publishers
     ros::Publisher _odom_slam_pub;
     ros::Publisher _map_slam_pub;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
+
     ros::Publisher _cloud_slam_pub;
 
     // ros tf2
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
-<<<<<<< HEAD
-=======
-=======
     ros::Publisher _double_map_pub;
->>>>>>> b1bf35486e989f92950135d021356fb7a36e480e
->>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
+
 
     // worker thread
     std::thread _slam_thread_handle;
