@@ -185,7 +185,8 @@ int LocalSlamNode::world_to_map_index(double x, double y){
 }
 
 // Bayesian Occupancy Grid Mapping Update
-void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud){
+void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
+{
     double P_HIT = 1 / exp(1);   // Probability of hit
 
     if (_double_map.data.empty()){

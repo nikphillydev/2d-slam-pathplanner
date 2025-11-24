@@ -133,11 +133,14 @@ double odds(double p){
 double inv_odds(double o){
     return (o) / (1.0 + o);
 }
-double clamp(double val){  // clamp value between 0.001 and 0.9
-    if val < 0.001 {
+double clamp(double val)
+{  
+    // clamp value between 0.001 and 0.9
+    if (val < 0.001) {
         return 0.001;
     } else if (val > 0.9){
         return 0.9;
     } else {
         return val;
     }
+}
