@@ -37,7 +37,7 @@ void LocalSlamNode::slam_thread()
 
         sensor_msgs::LaserScan laser_scan = get_laser_scan();
         nav_msgs::Odometry odom_filtered = get_odom_filtered();
-
+        
         std::stringstream debug;
         debug << "Laser scan: " << laser_scan.header.stamp << " Odometry: " << odom_filtered.header.stamp << std::endl;
         ROS_INFO("%s", debug.str().c_str());
