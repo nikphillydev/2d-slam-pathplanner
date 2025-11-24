@@ -158,3 +158,41 @@ nav_msgs::Odometry LocalSlamNode::tf2_to_odom_msg(const tf2::Transform& tf, cons
 
     return odom_msg;
 }
+
+
+// --- map utils ---
+void LocalSlamNode::init_map(){
+    _map.header.frame_id = "map";
+    _map.info.map_load_time = ros::Time::now();
+    // Initialize occupancy grid map parameters
+    _map.info.resolution = MAP_RESOLUTION;
+    _map.info.width = MAP_WIDTH;
+    _map.info.height = MAP_HEIGHT;
+    _map.info.origin.position.x = - (MAP_WIDTH * MAP_RESOLUTION) / 2.0; // Centered at (0,0)
+    _map.info.origin.position.y = - (MAP_HEIGHT * MAP_RESOLUTION) / 2.0;
+    _map.info.origin.position.z = 0.0;
+    _map.info.origin.orientation.w = 1.0; // No rotation
+
+    // Initialize map data to unknown (-1)
+    _map.data.resize(_map.info.width * _map.info.height, -1);
+}
+
+int LocalSlamNode::world_to_map_index(double x, double y){
+    double map_x = (x - _map.info.origin.position.x) / _map.info.resolution;
+    double map_y = (y - _map.info.origin.position.y) / _map.info.resolution;
+
+    int i = (int)map_x;
+    int j = (int)map_y;
+
+    if (i < 0 || i >= _map.info.width || j < 0 || j >= _map.info.height){
+        ROS_WARN("World coordinates out of map bounds");    // Do we update (double) the map size here?
+        return -1;
+    }
+
+    return j * _map.info.width + i;
+}
+
+// Bayesian Occupancy Grid Mapping Update
+void LocalSlamNode::update_map(const sensor_msgs::LaserScan& scan, const nav_msgs::Odometry& pose){
+    
+}

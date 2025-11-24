@@ -11,10 +11,29 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf2_ros
+  message_generation
+)
+
+## Declare DoubleOccupancyGrid
+add_message_files(
+  FILES
+  DoubleOccupancyGrid.msg
+)
+
+## Generate message dependencies
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  nav_msgs
 )
 
 ## Declare a catkin package
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS 
+  roscpp 
+  nav_msgs 
+  message_runtime
+)
 
 ## Specify locations of header files
 ## Your package locations should be listed before other locations

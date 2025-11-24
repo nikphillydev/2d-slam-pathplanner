@@ -3,6 +3,6 @@ prefix=/root/catkin_ws/install
 Name: slam
 Description: Description of slam
 Version: 0.0.0
-Cflags: 
+Cflags: -I${prefix}/include
 Libs: -L${prefix}/lib 
-Requires: 
+Requires: roscpp nav_msgs message_runtime
