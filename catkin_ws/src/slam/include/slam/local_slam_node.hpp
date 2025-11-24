@@ -50,6 +50,7 @@ private:
     // ros publishers
     ros::Publisher _odom_slam_pub;
     ros::Publisher _map_slam_pub;
+    ros::Publisher _double_map_pub;
 
     // worker thread
     std::thread _slam_thread_handle;
@@ -66,6 +67,7 @@ private:
     // slam algorithm output
     nav_msgs::Odometry _odom_slam;              // odometry
     nav_msgs::OccupancyGrid _map;               // dynamic map
+    slam::DoubleOccupancyGrid _double_map;      // double precision map for internal use
 
     bool _is_first_iteration = true;
 
