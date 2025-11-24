@@ -3,6 +3,9 @@
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/Odometry.h"
 #include "nav_msgs/OccupancyGrid.h"
+#include "tf2/utils.h"
+#include "tf2/LinearMath/Transform.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 #include <thread>
 #include <mutex>
@@ -23,6 +26,14 @@ public:
     // getters / setters
     sensor_msgs::LaserScan get_laser_scan();
     nav_msgs::Odometry get_odom_filtered();
+
+    // odometry msg to tf2 transform
+    tf2::Transform odom_msg_to_tf2(const nav_msgs::Odometry& odom_msg);
+
+    // tf2 transform to odometry msg
+    nav_msgs::Odometry tf2_to_odom_msg(const tf2::Transform& tf, const std::string& frame_id, const std::string& child_frame_id);
+
+    //
 
 private:
     // ros node handle
@@ -51,4 +62,11 @@ private:
     // slam algorithm output
     nav_msgs::Odometry _odom_slam;              // odometry
     nav_msgs::OccupancyGrid _map;               // dynamic map
+
+    bool _is_first_iteration = true;
+
+
+
+
+
 };
