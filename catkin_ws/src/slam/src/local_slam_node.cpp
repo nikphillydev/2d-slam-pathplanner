@@ -44,31 +44,6 @@ void LocalSlamNode::slam_thread()
         // std::stringstream debug;
         // debug << "Laser scan frame: " << laser_scan.header.frame_id << " Odometry frame: " << odom_filtered.header.frame_id << std::endl;
         // ROS_INFO("%s", debug.str().c_str());
-        
-        _odom_slam = odom_filtered;
-
-        sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
-        geometry_msgs::TransformStamped transform_laser_to_base_link;
-        try{
-            transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
-        }
-        catch (tf2::TransformException &ex) {
-            ROS_WARN("%s",ex.what());
-            ros::Duration(1.0).sleep();
-            continue;
-        }
-        sensor_msgs::PointCloud cloud_base_link;
-        if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) return;
-
-        geometry_msgs::TransformStamped transform_odom_to_base_link = create_transform_from_odom(_odom_slam);
-
-        // calculate transform_base_link_to_odom
-        // get cloud_odom
-
-        // geometry_msgs::TransformStamped odom_transform = create_transform_from_odom(_odom_slam);
-        // sensor_msgs::PointCloud cloud_odom;
-        // transform_point_cloud_to_odom(cloud_laser_scane, cloud_odom);
-        // _cloud_slam_pub.publish(cloud_odom);
 
         // check both msgs are not blank
         if (laser_scan.header.stamp.toSec() == 0 || odom_filtered.header.stamp.toSec() == 0){
@@ -105,6 +80,30 @@ void LocalSlamNode::slam_thread()
             // D
             // update map
             
+            _odom_slam = odom_filtered;
+
+            sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
+            geometry_msgs::TransformStamped transform_laser_to_base_link;
+            try{
+                transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
+            }
+            catch (tf2::TransformException &ex) {
+                ROS_WARN("%s",ex.what());
+                ros::Duration(1.0).sleep();
+                continue;
+            }
+            sensor_msgs::PointCloud cloud_base_link;
+            if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) return;
+
+            geometry_msgs::TransformStamped transform_odom_to_base_link = create_transform_from_odom(_odom_slam);
+
+            // calculate transform_base_link_to_odom
+            // get cloud_odom
+
+            // geometry_msgs::TransformStamped odom_transform = create_transform_from_odom(_odom_slam);
+            // sensor_msgs::PointCloud cloud_odom;
+            // transform_point_cloud_to_odom(cloud_laser_scane, cloud_odom);
+            // _cloud_slam_pub.publish(cloud_odom);
 
         }
 
