@@ -41,6 +41,17 @@ public:
     sensor_msgs::LaserScan get_laser_scan();
     nav_msgs::Odometry get_odom_filtered();
 
+    // odometry msg to tf2 transform
+    tf2::Transform odom_msg_to_tf2(const nav_msgs::Odometry& odom_msg);
+
+    // tf2 transform to odometry msg
+    nav_msgs::Odometry tf2_to_odom_msg(const tf2::Transform& tf, const std::string& frame_id, const std::string& child_frame_id);
+
+    // map utils
+    void init_map();
+    int world_to_map_index(double x, double y);
+    void update_map(const sensor_msgs::LaserScan& scan, const nav_msgs::Odometry& pose);
+
 private:
     // ros node handle
     ros::NodeHandle _nh;
@@ -77,4 +88,16 @@ private:
     // slam algorithm output
     nav_msgs::Odometry _odom_slam;              // odometry
     nav_msgs::OccupancyGrid _map;               // dynamic map
+    slam::DoubleOccupancyGrid _double_map;      // double precision map for internal use
+
+    bool _is_first_iteration = true;
+
+    // map parameters
+    const double MAP_RESOLUTION = 0.05; // meters per cell
+    const int MAP_WIDTH = 2000;          // cells
+    const int MAP_HEIGHT = 2000;         // cells
+
+
+
+
 };
