@@ -6,7 +6,6 @@
 
 #IncludeRegexTransform: 
 
-<<<<<<< HEAD
 /opt/ros/noetic/include/geometry_msgs/Point.h
 string
 -
@@ -1251,6 +1250,14 @@ stdexcept
 
 /opt/ros/noetic/include/tf2/impl/convert.h
 
+/opt/ros/noetic/include/tf2/impl/utils.h
+tf2_geometry_msgs/tf2_geometry_msgs.h
+-
+tf2/transform_datatypes.h
+-
+tf2/LinearMath/Quaternion.h
+-
+
 /opt/ros/noetic/include/tf2/transform_datatypes.h
 string
 -
@@ -1267,6 +1274,14 @@ ros/message_forward.h
 ros/time.h
 -
 ros/types.h
+-
+
+/opt/ros/noetic/include/tf2/utils.h
+tf2/LinearMath/Transform.h
+-
+tf2/LinearMath/Quaternion.h
+-
+tf2/impl/utils.h
 -
 
 /opt/ros/noetic/include/tf2_geometry_msgs/tf2_geometry_msgs.h
@@ -1415,6 +1430,26 @@ vector
 time.h
 -
 
+/root/catkin_ws/devel/include/slam/DoubleOccupancyGrid.h
+string
+-
+vector
+-
+memory
+-
+ros/types.h
+-
+ros/serialization.h
+-
+ros/builtin_message_traits.h
+-
+ros/message_operations.h
+-
+std_msgs/Header.h
+-
+nav_msgs/MapMetaData.h
+-
+
 /root/catkin_ws/src/slam/include/slam/local_slam_node.hpp
 ros/ros.h
 /root/catkin_ws/src/slam/include/slam/ros/ros.h
@@ -1438,6 +1473,20 @@ geometry_msgs/Point32.h
 /root/catkin_ws/src/slam/include/slam/geometry_msgs/Point32.h
 geometry_msgs/Point.h
 /root/catkin_ws/src/slam/include/slam/geometry_msgs/Point.h
+geometry_msgs/TransformStamped.h
+/root/catkin_ws/src/slam/include/slam/geometry_msgs/TransformStamped.h
+geometry_msgs/Point32.h
+/root/catkin_ws/src/slam/include/slam/geometry_msgs/Point32.h
+geometry_msgs/Point.h
+/root/catkin_ws/src/slam/include/slam/geometry_msgs/Point.h
+tf2/utils.h
+/root/catkin_ws/src/slam/include/slam/tf2/utils.h
+tf2/LinearMath/Transform.h
+/root/catkin_ws/src/slam/include/slam/tf2/LinearMath/Transform.h
+tf2_geometry_msgs/tf2_geometry_msgs.h
+/root/catkin_ws/src/slam/include/slam/tf2_geometry_msgs/tf2_geometry_msgs.h
+slam/DoubleOccupancyGrid.h
+/root/catkin_ws/src/slam/include/slam/slam/DoubleOccupancyGrid.h
 thread
 -
 mutex
@@ -1446,12 +1495,20 @@ mutex
 /root/catkin_ws/src/slam/include/slam/utils.hpp
 cmath
 -
+tf2/LinearMath/Transform.h
+/root/catkin_ws/src/slam/include/slam/tf2/LinearMath/Transform.h
+tf2_geometry_msgs/tf2_geometry_msgs.h
+/root/catkin_ws/src/slam/include/slam/tf2_geometry_msgs/tf2_geometry_msgs.h
 sensor_msgs/PointCloud.h
 /root/catkin_ws/src/slam/include/slam/sensor_msgs/PointCloud.h
 sensor_msgs/LaserScan.h
 /root/catkin_ws/src/slam/include/slam/sensor_msgs/LaserScan.h
 geometry_msgs/Point32.h
 /root/catkin_ws/src/slam/include/slam/geometry_msgs/Point32.h
+geometry_msgs/TransformStamped.h
+/root/catkin_ws/src/slam/include/slam/geometry_msgs/TransformStamped.h
+nav_msgs/Odometry.h
+/root/catkin_ws/src/slam/include/slam/nav_msgs/Odometry.h
 
 /root/catkin_ws/src/slam/src/local_slam_node.cpp
 slam/local_slam_node.hpp
@@ -1465,5 +1522,3 @@ ros/ros.h
 slam/local_slam_node.hpp
 /root/catkin_ws/src/slam/src/slam/local_slam_node.hpp
 
-=======
->>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
