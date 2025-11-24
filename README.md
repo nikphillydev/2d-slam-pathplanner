@@ -28,11 +28,15 @@ To stop the container:
 ```docker-compose down```
 
 ### Running the Project
-Open a shell in the running Docker container.
+Open a shell on your computer (the host machine). Run the following command to allow GUI apps in the Docker container to connect your computer's screen:
+
+```xhost +```
+
+Now open a shell in the running Docker container.
 
 To launch the Jackal robot in the Gazebo simulation
 
-```roslaunch jackal_gazebo jackal_world.launch```
+```roslaunch jackal_gazebo jackal_world.launch config:=front_laser```
 
 To launch the Rviz visualization:
 
