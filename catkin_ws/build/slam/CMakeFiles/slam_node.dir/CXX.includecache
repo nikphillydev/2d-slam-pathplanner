@@ -6,6 +6,7 @@
 
 #IncludeRegexTransform: 
 
+<<<<<<< HEAD
 /opt/ros/noetic/include/geometry_msgs/Point.h
 string
 -
@@ -1464,3 +1465,5 @@ ros/ros.h
 slam/local_slam_node.hpp
 /root/catkin_ws/src/slam/src/slam/local_slam_node.hpp
 
+=======
+>>>>>>> 889a94724135c3b2751d0daa87f74535370ea198

@@ -91,9 +91,9 @@ endif()
 # flag project as catkin-based to distinguish if a find_package()-ed project is a catkin project
 set(slam_FOUND_CATKIN_PROJECT TRUE)
 
-if(NOT " " STREQUAL " ")
+if(NOT "/root/catkin_ws/devel/include " STREQUAL " ")
   set(slam_INCLUDE_DIRS "")
-  set(_include_dirs "")
+  set(_include_dirs "/root/catkin_ws/devel/include")
   if(NOT " " STREQUAL " ")
     set(_report "Check the issue tracker '' and consider creating a ticket if the problem has not been reported yet.")
   elseif(NOT " " STREQUAL " ")
@@ -179,7 +179,7 @@ foreach(library ${libraries})
   endif()
 endforeach()
 
-set(slam_EXPORTED_TARGETS "")
+set(slam_EXPORTED_TARGETS "slam_generate_messages_cpp;slam_generate_messages_eus;slam_generate_messages_lisp;slam_generate_messages_nodejs;slam_generate_messages_py")
 # create dummy targets for exported code generation targets to make life of users easier
 foreach(t ${slam_EXPORTED_TARGETS})
   if(NOT TARGET ${t})
@@ -187,7 +187,7 @@ foreach(t ${slam_EXPORTED_TARGETS})
   endif()
 endforeach()
 
-set(depends "")
+set(depends "roscpp;nav_msgs;message_runtime")
 foreach(depend ${depends})
   string(REPLACE " " ";" depend_list ${depend})
   # the package name of the dependency must be kept in a unique variable so that it is not overwritten in recursive calls
@@ -216,7 +216,7 @@ foreach(depend ${depends})
   _list_append_deduplicate(slam_EXPORTED_TARGETS ${${slam_dep}_EXPORTED_TARGETS})
 endforeach()
 
-set(pkg_cfg_extras "")
+set(pkg_cfg_extras "slam-msg-extras.cmake")
 foreach(extra ${pkg_cfg_extras})
   if(NOT IS_ABSOLUTE ${extra})
     set(extra ${slam_DIR}/${extra})

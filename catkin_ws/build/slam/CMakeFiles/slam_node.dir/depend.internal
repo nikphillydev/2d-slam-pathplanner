@@ -3,7 +3,10 @@
 
 slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o
  /opt/ros/noetic/include/geometry_msgs/Point.h
+<<<<<<< HEAD
  /opt/ros/noetic/include/geometry_msgs/Point32.h
+=======
+>>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
  /opt/ros/noetic/include/geometry_msgs/PointStamped.h
  /opt/ros/noetic/include/geometry_msgs/Pose.h
  /opt/ros/noetic/include/geometry_msgs/PoseStamped.h
@@ -92,6 +95,7 @@ slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o
  /opt/ros/noetic/include/tf2/LinearMath/Scalar.h
  /opt/ros/noetic/include/tf2/LinearMath/Transform.h
  /opt/ros/noetic/include/tf2/LinearMath/Vector3.h
+<<<<<<< HEAD
  /opt/ros/noetic/include/tf2/buffer_core.h
  /opt/ros/noetic/include/tf2/convert.h
  /opt/ros/noetic/include/tf2/exceptions.h
@@ -106,6 +110,15 @@ slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o
  /opt/ros/noetic/include/tf2_ros/buffer.h
  /opt/ros/noetic/include/tf2_ros/buffer_interface.h
  /opt/ros/noetic/include/tf2_ros/transform_listener.h
+=======
+ /opt/ros/noetic/include/tf2/convert.h
+ /opt/ros/noetic/include/tf2/exceptions.h
+ /opt/ros/noetic/include/tf2/impl/convert.h
+ /opt/ros/noetic/include/tf2/impl/utils.h
+ /opt/ros/noetic/include/tf2/transform_datatypes.h
+ /opt/ros/noetic/include/tf2/utils.h
+ /opt/ros/noetic/include/tf2_geometry_msgs/tf2_geometry_msgs.h
+>>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
  /opt/ros/noetic/include/xmlrpcpp/XmlRpcDecl.h
  /opt/ros/noetic/include/xmlrpcpp/XmlRpcValue.h
  /root/catkin_ws/src/slam/include/slam/local_slam_node.hpp
@@ -113,7 +126,10 @@ slam/CMakeFiles/slam_node.dir/src/local_slam_node.cpp.o
  /root/catkin_ws/src/slam/src/local_slam_node.cpp
 slam/CMakeFiles/slam_node.dir/src/main.cpp.o
  /opt/ros/noetic/include/geometry_msgs/Point.h
+<<<<<<< HEAD
  /opt/ros/noetic/include/geometry_msgs/Point32.h
+=======
+>>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
  /opt/ros/noetic/include/geometry_msgs/PointStamped.h
  /opt/ros/noetic/include/geometry_msgs/Pose.h
  /opt/ros/noetic/include/geometry_msgs/PoseStamped.h
@@ -202,6 +218,7 @@ slam/CMakeFiles/slam_node.dir/src/main.cpp.o
  /opt/ros/noetic/include/tf2/LinearMath/Scalar.h
  /opt/ros/noetic/include/tf2/LinearMath/Transform.h
  /opt/ros/noetic/include/tf2/LinearMath/Vector3.h
+<<<<<<< HEAD
  /opt/ros/noetic/include/tf2/buffer_core.h
  /opt/ros/noetic/include/tf2/convert.h
  /opt/ros/noetic/include/tf2/exceptions.h
@@ -216,6 +233,15 @@ slam/CMakeFiles/slam_node.dir/src/main.cpp.o
  /opt/ros/noetic/include/tf2_ros/buffer.h
  /opt/ros/noetic/include/tf2_ros/buffer_interface.h
  /opt/ros/noetic/include/tf2_ros/transform_listener.h
+=======
+ /opt/ros/noetic/include/tf2/convert.h
+ /opt/ros/noetic/include/tf2/exceptions.h
+ /opt/ros/noetic/include/tf2/impl/convert.h
+ /opt/ros/noetic/include/tf2/impl/utils.h
+ /opt/ros/noetic/include/tf2/transform_datatypes.h
+ /opt/ros/noetic/include/tf2/utils.h
+ /opt/ros/noetic/include/tf2_geometry_msgs/tf2_geometry_msgs.h
+>>>>>>> 889a94724135c3b2751d0daa87f74535370ea198
  /opt/ros/noetic/include/xmlrpcpp/XmlRpcDecl.h
  /opt/ros/noetic/include/xmlrpcpp/XmlRpcValue.h
  /root/catkin_ws/src/slam/include/slam/local_slam_node.hpp
