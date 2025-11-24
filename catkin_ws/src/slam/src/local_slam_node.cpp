@@ -155,37 +155,73 @@ nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
 
 // --- map utils ---
 void LocalSlamNode::init_map(){
-    _map.header.frame_id = "map";
-    _map.info.map_load_time = ros::Time::now();
+    _double_map.header.frame_id = "map";
+    _double_map.info.map_load_time = ros::Time::now();
     // Initialize occupancy grid map parameters
-    _map.info.resolution = MAP_RESOLUTION;
-    _map.info.width = MAP_WIDTH;
-    _map.info.height = MAP_HEIGHT;
-    _map.info.origin.position.x = - (MAP_WIDTH * MAP_RESOLUTION) / 2.0; // Centered at (0,0)
-    _map.info.origin.position.y = - (MAP_HEIGHT * MAP_RESOLUTION) / 2.0;
-    _map.info.origin.position.z = 0.0;
-    _map.info.origin.orientation.w = 1.0; // No rotation
-
+    _double_map.info.resolution = MAP_RESOLUTION;
+    _double_map.info.width = MAP_WIDTH;
+    _double_map.info.height = MAP_HEIGHT;
+    _double_map.info.origin.position.x = - (MAP_WIDTH * MAP_RESOLUTION) / 2.0; // Centered at (0,0)
+    _double_map.info.origin.position.y = - (MAP_HEIGHT * MAP_RESOLUTION) / 2.0;
+    _double_map.info.origin.position.z = 0.0;
+    _double_map.info.origin.orientation.w = 1.0; // No rotation
     // Initialize map data to unknown (-1)
-    _map.data.resize(_map.info.width * _map.info.height, -1);
+    _double_map.data.resize(_double_map.info.width * _double_map.info.height, -1);
 }
 
 int LocalSlamNode::world_to_map_index(double x, double y){
-    double map_x = (x - _map.info.origin.position.x) / _map.info.resolution;
-    double map_y = (y - _map.info.origin.position.y) / _map.info.resolution;
+    double map_x = (x - _double_map.info.origin.position.x) / _double_map.info.resolution;
+    double map_y = (y - _double_map.info.origin.position.y) / _double_map.info.resolution;
 
     int i = (int)map_x;
     int j = (int)map_y;
 
-    if (i < 0 || i >= _map.info.width || j < 0 || j >= _map.info.height){
+    if (i < 0 || i >= _double_map.info.width || j < 0 || j >= _double_map.info.height){
         ROS_WARN("World coordinates out of map bounds");    // Do we update (double) the map size here?
         return -1;
     }
 
-    return j * _map.info.width + i;
+    return j * _double_map.info.width + i;
 }
 
 // Bayesian Occupancy Grid Mapping Update
-void LocalSlamNode::update_map(const sensor_msgs::LaserScan& scan, const nav_msgs::Odometry& pose){
-    
+void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud){
+    double P_HIT = 1 / exp(1);   // Probability of hit
+
+    if (_double_map.data.empty()){
+        init_map();
+    }
+    if (cloud.points.empty()){
+        return;
+    }
+    // For each point in the point cloud
+    for (const auto& point : cloud.points){
+        int index = world_to_map_index(point.x, point.y);
+        if (index == -1){
+            continue;   // Skip points out of bounds
+        }
+        // Update occupancy probability using log-odds
+        if (_double_map.data[index] == -1){
+            _double_map.data[index] = P_HIT; // Initialize hit point to be 2/3 probability
+        }
+        else{
+            //Mnew(x) = clamp(odds−1(odds(Mold(x)) · odds(phit)))
+            _double_map.data[index] = clamp(inv_odds(odds(_double_map.data[index]) * odds(P_HIT)));
+        }
+        // for those grids along the ray, we update them as miss points
+        for (i = 0; i < point.x; i += MAP_RESOLUTION){
+            int miss_index = world_to_map_index(i, point.y/point.x * i);
+            if (miss_index == -1 || miss_index == index){
+                continue;
+            }
+            if (_double_map.data[miss_index] == -1){
+                _double_map.data[miss_index] = 1 / (exp(1)*(point.x*point.x))*i*i; // Initialize miss point to be a x squared probability where the max is 1/e
+            }
+            else{
+                // Mnew(x) = clamp(odds−1(odds(Mold(x)) · odds(pmiss)))
+                double P_MISS = 1 / (exp(1)*(point.x*point.x))*i*i;
+                _double_map.data[miss_index] = clamp(inv_odds(odds(_double_map.data[miss_index]) * odds(P_MISS)));
+            }
+        }
+    }
 }
