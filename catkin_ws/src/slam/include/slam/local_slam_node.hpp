@@ -9,13 +9,14 @@
 #include "nav_msgs/Odometry.h"
 #include "nav_msgs/OccupancyGrid.h"
 
-#include "geometry_msgs/TransformStamped.h"
-#include "geometry_msgs/Point32.h"
-#include "geometry_msgs/Point.h"
 
 #include "geometry_msgs/TransformStamped.h"
 #include "geometry_msgs/Point32.h"
 #include "geometry_msgs/Point.h"
+#include "geometry_msgs/TransformStamped.h"
+#include "geometry_msgs/Point32.h"
+#include "geometry_msgs/Point.h"
+
 #include "tf2/utils.h"
 #include "tf2/LinearMath/Transform.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
@@ -38,17 +39,9 @@ public:
     void front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg);
     void odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg);
 
-    bool transform_point_cloud_to_odom(const sensor_msgs::PointCloud& cloud, sensor_msgs::PointCloud& cloud_transformed);
-
     // getters / setters
     sensor_msgs::LaserScan get_laser_scan();
     nav_msgs::Odometry get_odom_filtered();
-
-    // odometry msg to tf2 transform
-    tf2::Transform odom_msg_to_tf2(const nav_msgs::Odometry& odom_msg);
-
-    // tf2 transform to odometry msg
-    nav_msgs::Odometry tf2_to_odom_msg(const tf2::Transform& tf, const std::string& frame_id, const std::string& child_frame_id);
 
     // map utils
     void init_map();
@@ -68,13 +61,13 @@ private:
     ros::Publisher _odom_slam_pub;
     ros::Publisher _map_slam_pub;
 
+
     ros::Publisher _cloud_slam_pub;
 
     // ros tf2
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
     ros::Publisher _double_map_pub;
-
 
     // worker thread
     std::thread _slam_thread_handle;
@@ -92,8 +85,6 @@ private:
     nav_msgs::Odometry _odom_slam;              // odometry
     nav_msgs::OccupancyGrid _map;               // dynamic map
     slam::DoubleOccupancyGrid _double_map;      // double precision map for internal use
-
-    bool _is_first_iteration = true;
 
     // map parameters
     const double MAP_RESOLUTION = 0.05; // meters per cell
