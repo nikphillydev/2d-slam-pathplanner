@@ -16,6 +16,7 @@
 
 #include "slam/DoubleOccupancyGrid.h"
 
+
 #include <thread>
 #include <mutex>
 
@@ -40,6 +41,7 @@ public:
     void init_map();
     int world_to_map_index(double x, double y);
     void update_map(const sensor_msgs::PointCloud& cloud);
+    nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid();
 
 private:
     // ros node handle
