@@ -114,6 +114,16 @@ nav_msgs::Odometry create_odom_from_transform(const tf2::Transform& tf, const st
     return odom_msg;
 }
 
+geometry_msgs::TransformStamped create_transform_stamped_from_transform(const tf2::Transform& tf, const std::string& frame_id, const std::string& child_frame_id)
+{
+    geometry_msgs::TransformStamped transform_stamped;
+    transform_stamped.header.stamp = ros::Time::now();
+    transform_stamped.header.frame_id = frame_id;
+    transform_stamped.child_frame_id = child_frame_id;
+    transform_stamped.transform = tf2::toMsg(tf);
+    return transform_stamped;
+}
+
 geometry_msgs::TransformStamped invert_transform(const geometry_msgs::TransformStamped& ts)
 {
     tf2::Transform transform;

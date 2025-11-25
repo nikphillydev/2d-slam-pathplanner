@@ -2,24 +2,18 @@
 
 #include "tf2_ros/buffer.h"
 #include "tf2_ros/transform_listener.h"
+#include "tf2_ros/transform_broadcaster.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2/LinearMath/Transform.h"
 
 #include "sensor_msgs/LaserScan.h"
 #include "sensor_msgs/PointCloud.h"
 #include "nav_msgs/Odometry.h"
 #include "nav_msgs/OccupancyGrid.h"
-
-
-#include "geometry_msgs/TransformStamped.h"
-#include "geometry_msgs/Point32.h"
-#include "geometry_msgs/Point.h"
 #include "geometry_msgs/TransformStamped.h"
 #include "geometry_msgs/Point32.h"
 #include "geometry_msgs/Point.h"
 
-#include "tf2/utils.h"
-#include "tf2/LinearMath/Transform.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "slam/DoubleOccupancyGrid.h"
 
 
@@ -60,14 +54,12 @@ private:
     // ros publishers
     ros::Publisher _odom_slam_pub;
     ros::Publisher _map_slam_pub;
-
-
     ros::Publisher _cloud_slam_pub;
 
     // ros tf2
     tf2_ros::Buffer _tf_buffer;
     tf2_ros::TransformListener _tf_listener;
-    ros::Publisher _double_map_pub;
+    tf2_ros::TransformBroadcaster _tf_broadcaster;
 
     // worker thread
     std::thread _slam_thread_handle;
@@ -83,6 +75,7 @@ private:
 
     // slam algorithm output
     nav_msgs::Odometry _odom_slam;              // odometry
+    tf2::Transform _odom_slam_tf;               // odometry transform
     nav_msgs::OccupancyGrid _map;               // dynamic map
     slam::DoubleOccupancyGrid _double_map;      // double precision map for internal use
 
