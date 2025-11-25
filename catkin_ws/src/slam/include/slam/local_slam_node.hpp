@@ -1,3 +1,5 @@
+#pragma once
+
 #include "ros/ros.h"
 
 #include "tf2_ros/buffer.h"
@@ -38,7 +40,12 @@ public:
     nav_msgs::Odometry get_odom_filtered();
 
     // map utils
+    tf2::Transform run_ceres_solver(
+        const sensor_msgs::LaserScan& scan, 
+        const tf2::Transform& initial_guess, 
+        const slam::DoubleOccupancyGrid& map);
     void init_map();
+    void broadcast_map_tf();
     int world_to_map_index(double x, double y);
     void update_map(const sensor_msgs::PointCloud& cloud);
     nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid();
@@ -81,8 +88,8 @@ private:
 
     // map parameters
     const double MAP_RESOLUTION = 0.05; // meters per cell
-    const int MAP_WIDTH = 2000;          // cells
-    const int MAP_HEIGHT = 2000;         // cells
+    const int MAP_WIDTH = 5000;          // cells
+    const int MAP_HEIGHT = 5000;         // cells
 
 
 
