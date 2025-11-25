@@ -1,7 +1,6 @@
 #include "slam/local_slam_node.hpp"
 #include "slam/residual.hpp"
 #include "slam/utils.hpp"
-#include "ceres_solver.hpp"
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -65,6 +64,24 @@ void LocalSlamNode::slam_thread()
             continue;
         }
 
+        // Extract point cloud from laser scan
+        sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
+        sensor_msgs::PointCloud cloud_base_link;
+        geometry_msgs::TransformStamped transform_laser_to_base_link;
+        try{
+            transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
+        }
+        catch (tf2::TransformException &ex) {
+            ROS_WARN("%s",ex.what());
+            loop_rate.sleep();
+            continue;
+        }
+        if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) {
+            loop_rate.sleep();
+            continue;
+        }
+
+
         if (is_first_iteration)
         {
             _odom_slam = odom_filtered;
@@ -86,20 +103,6 @@ void LocalSlamNode::slam_thread()
 
             _odom_slam_tf = _odom_slam_tf * tf_delta;
 
-            // Laser Scan to Point Cloud in Odom Frame
-
-            sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
-            geometry_msgs::TransformStamped transform_laser_to_base_link;
-            try{
-                transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, laser_scan.header.stamp);
-            }
-            catch (tf2::TransformException &ex) {
-                ROS_WARN("%s",ex.what());
-                continue;
-            }
-
-            sensor_msgs::PointCloud cloud_base_link;
-            if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) return;
 
             // C
             // Ceres Solver Update
@@ -224,7 +227,7 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
         );
 
     problem.AddResidualBlock(prior_cost_function, nullptr, pose);
-    
+
     // 3. Configure Solver
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_QR;
