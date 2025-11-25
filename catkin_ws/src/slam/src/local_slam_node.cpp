@@ -1,5 +1,6 @@
 #include "slam/local_slam_node.hpp"
 #include "slam/utils.hpp"
+#include "ceres_solver.hpp"
 
 LocalSlamNode::LocalSlamNode() 
     : _tf_listener(_tf_buffer)
