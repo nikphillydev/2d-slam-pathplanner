@@ -1,6 +1,6 @@
 #include <ceres/ceres.h>
 #include <ceres/jet.h>
-#include <Eigen/Core>
+#include <eigen3/Eigen/Core>
 #include <vector>
 #include <cmath>
 
