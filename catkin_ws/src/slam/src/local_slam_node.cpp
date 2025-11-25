@@ -44,7 +44,7 @@ void LocalSlamNode::slam_thread()
 {
     bool is_first_iteration = true;
     
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(1000);
     
     while(ros::ok())
     {
@@ -270,15 +270,19 @@ void LocalSlamNode::broadcast_map_tf()
     _tf_broadcaster.sendTransform(tf_stamped);
 }
 
-int LocalSlamNode::world_to_map_index(double x, double y){
+int LocalSlamNode::world_to_map_index(double x, double y)
+{
     double map_x = (x - _double_map.info.origin.position.x) / _double_map.info.resolution;
     double map_y = (y - _double_map.info.origin.position.y) / _double_map.info.resolution;
 
     int i = (int)map_x;
     int j = (int)map_y;
 
-    if (i < 0 || i >= _double_map.info.width || j < 0 || j >= _double_map.info.height){
-        ROS_WARN("World coordinates out of map bounds");    // Do we update (double) the map size here?
+
+    if (i < 0 || i >= _double_map.info.width || j < 0 || j >= _double_map.info.height)
+    {
+        // TODO update (double) the map size here
+        ROS_WARN("World coordinates out of map bounds");
         return -1;
     }
 
@@ -289,8 +293,8 @@ int LocalSlamNode::world_to_map_index(double x, double y){
 void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
 {
     // Probability Constants
-    const double P_HIT = 0.55;  // Slightly above 0.5
-    const double P_MISS = 0.45; // Slightly below 0.5
+    const double P_HIT = 0.55;
+    const double P_MISS = 0.45;
 
     if (_double_map.data.empty()){
         init_map();
@@ -304,15 +308,17 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
     double robot_y = _odom_slam.pose.pose.position.y;
 
     for (const auto& point : cloud.points){
-        // 2. Update the "Hit" point (The wall)
+        // 2. Update the "Hit" point
         int hit_index = world_to_map_index(point.x, point.y);
         if (hit_index != -1){
-            if (_double_map.data[hit_index] == -1) _double_map.data[hit_index] = 0.5; // Init
+            if (_double_map.data[hit_index] == -1)
+            {
+                _double_map.data[hit_index] = P_HIT; // Init
+            }
             _double_map.data[hit_index] = clamp(inv_odds(odds(_double_map.data[hit_index]) * odds(P_HIT)));
         }
 
         // 3. Ray Trace for "Miss" points (Free space between Robot and Wall)
-        // We use the distance vector logic, not just X axis
         double dx = point.x - robot_x;
         double dy = point.y - robot_y;
         double distance = std::sqrt(dx*dx + dy*dy);
@@ -322,7 +328,6 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
         double unit_y = dy / distance;
 
         // Step along the ray
-        // FIX: Use double 'r', not int
         for (double r = 0; r < distance; r += MAP_RESOLUTION) {
             
             // Calculate intermediate point
@@ -333,12 +338,14 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
 
             // Don't update if out of bounds or if we hit the wall itself
             if (miss_index == -1 || miss_index == hit_index) {
-                continue;
+                break;
             }
 
             // Update free space
-            if (_double_map.data[miss_index] == -1) _double_map.data[miss_index] = 0.5; // Init
-            
+            if (_double_map.data[miss_index] == -1) 
+            {
+                _double_map.data[miss_index] = P_MISS; // Init
+            }
             _double_map.data[miss_index] = clamp(inv_odds(odds(_double_map.data[miss_index]) * odds(P_MISS)));
         }
     }
@@ -356,7 +363,7 @@ nav_msgs::OccupancyGrid LocalSlamNode::convert_double_map_to_occupancy_grid(){
             occupancy_grid.data[i] = -1; // Unknown
         }
         else{
-            occupancy_grid.data[i] = static_cast<int8_t>(clamp(_double_map.data[i] * 100)); // Convert to [0, 100]
+            occupancy_grid.data[i] = static_cast<int8_t>(_double_map.data[i] * 100); // Convert to [0, 100]
         }
     }
     return occupancy_grid;
