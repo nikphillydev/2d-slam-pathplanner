@@ -115,6 +115,7 @@ void LocalSlamNode::slam_thread()
         _last_odom_filtered = odom_filtered;
 
         _odom_slam_pub.publish(_odom_slam);
+        _map = convert_double_map_to_occupancy_grid();
         _map_slam_pub.publish(_map);
         _cloud_slam_pub.publish(cloud_odom);
         _tf_broadcaster.sendTransform(transform_base_link_slam_to_odom);
@@ -226,7 +227,7 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
     }
 }
 
-nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid(){
+nav_msgs::OccupancyGrid LocalSlamNode::convert_double_map_to_occupancy_grid(){
     nav_msgs::OccupancyGrid occupancy_grid;
     occupancy_grid.header = _double_map.header;
     occupancy_grid.info = _double_map.info;

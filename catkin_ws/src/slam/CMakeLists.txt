@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   tf2_ros
   message_generation
-  Ceres REQUIRED
+  ceres REQUIRED
 )
 
 ## Declare DoubleOccupancyGrid
@@ -41,6 +41,7 @@ catkin_package(
 include_directories(
   ${PROJECT_SOURCE_DIR}/include
   ${catkin_INCLUDE_DIRS}                  # created by find_package()
+  ${ceres_INCLUDE_DIRS}
 )
 
 ## Declare a C++ executable
@@ -49,7 +50,7 @@ add_executable(slam_node src/main.cpp src/local_slam_node.cpp)
 ## Specify libraries to link executable target against
 target_link_libraries(slam_node
   ${catkin_LIBRARIES}                     # created by find_package()
-  Ceres::ceres                            # Ceres solver
+  ${ceres_LIBRARIES}                      # Ceres solver
 )
 
 ## Add cmake target dependencies of the executable

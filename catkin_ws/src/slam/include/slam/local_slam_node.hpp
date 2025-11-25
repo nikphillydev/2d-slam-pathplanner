@@ -40,7 +40,7 @@ public:
     // map utils
     void init_map();
     int world_to_map_index(double x, double y);
-    void update_map(const sensor_msgs::LaserScan& scan, const nav_msgs::Odometry& pose);
+    void update_map(const sensor_msgs::PointCloud& cloud);
     nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid();
 
 private:
