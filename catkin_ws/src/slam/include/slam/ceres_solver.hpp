@@ -1,7 +1,6 @@
-
-#include "ceres/ceres.h"
-#include "ceres/jet.h"
-#include "eigen3/Eigen/Core"
+#include <ceres/ceres.h>
+#include <ceres/jet.h>
+#include <eigen3/Eigen/Core>
 #include <vector>
 #include <cmath>
 
@@ -80,47 +79,5 @@ struct ScanMatchCostFunctor{
     }
 };
 
-int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
 
-  const int H = 50, W = 50;
-  std::vector<std::vector<double>> grid(H, std::vector<double>(W, 0.0));
-  // there is a vertical obstacle in the middle
-  for (int y = 0; y < H; ++y) {
-    grid[y][W/2] = 1.0;
-  }
 
-  std::vector<Eigen::Vector2d> scan_points;
-  scan_points.emplace_back(0.0,  0.0);
-  scan_points.emplace_back(0.0,  1.0);
-  scan_points.emplace_back(0.0, -1.0);
-
-  double xi[3];
-  xi[0] = 10.0;   // x
-  xi[1] = 25.0;   // y
-  xi[2] = 0.0;    // theta
-
-  ceres::Problem problem;
-
-  for (const auto& hk : scan_points) {
-    ceres::CostFunction* cost_function =
-        new ceres::AutoDiffCostFunction<ScanMatchCostFunctor, 1, 3>(
-            new ScanMatchCostFunctor(hk, &grid));
-
-    problem.AddResidualBlock(cost_function, nullptr, xi);
-  }
-
-  ceres::Solver::Options options;
-  options.linear_solver_type = ceres::DENSE_QR;
-  options.minimizer_progress_to_stdout = true;
-  options.max_num_iterations = 50;
-
-  ceres::Solver::Summary summary;
-  ceres::Solve(options, &problem, &summary);
-
-  std::cout << summary.BriefReport() << "\n";
-  std::cout << "xi = [x, y, theta]: "
-            << xi[0] << ", " << xi[1] << ", " << xi[2] << std::endl;
-
-  return 0;
-}

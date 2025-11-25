@@ -1,6 +1,10 @@
 #include "slam/local_slam_node.hpp"
+#include "slam/residual.hpp"
 #include "slam/utils.hpp"
 #include "ceres_solver.hpp"
+
+#include <ceres/ceres.h>
+#include <ceres/rotation.h>
 
 LocalSlamNode::LocalSlamNode() 
     : _tf_listener(_tf_buffer)
@@ -16,6 +20,10 @@ LocalSlamNode::LocalSlamNode()
 
     // start worker thread
     _slam_thread_handle = std::thread(&LocalSlamNode::slam_thread, this);
+
+    // Initialize
+    init_map();
+    broadcast_map_tf();
 
     ROS_INFO("LocalSlamNode has started");
 }
@@ -74,15 +82,13 @@ void LocalSlamNode::slam_thread()
             tf2::Transform tf_delta = tf_odom_prev.inverse() * tf_odom_curr;
 
             // B
-            // Prediction
+            // Odometry Prediction
 
             _odom_slam_tf = _odom_slam_tf * tf_delta;
 
-            // C 
-            // Update with Ceres Solver
-
-            // _odom_slam_tf = run_ceres_solver(laser_scan, _odom_slam_tf, map);
-
+            // C
+            // Ceres Solver Update
+            _odom_slam_tf = run_ceres_solver(laser_scan, _odom_slam_tf, _double_map);
             _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link_slam");
         }
 
@@ -104,11 +110,11 @@ void LocalSlamNode::slam_thread()
         geometry_msgs::TransformStamped transform_base_link_slam_to_odom = create_transform_stamped_from_transform(_odom_slam_tf, "odom", "base_link_slam");
 
         sensor_msgs::PointCloud cloud_odom;
-        if (!transform_point_cloud(cloud_base_link, cloud_odom, transform_base_link_slam_to_odom));
+        if (!transform_point_cloud(cloud_base_link, cloud_odom, transform_base_link_slam_to_odom)) return;
 
         // E
 
-        // update map
+        update_map(cloud_odom);
 
         // F
 
@@ -118,6 +124,7 @@ void LocalSlamNode::slam_thread()
         _map = convert_double_map_to_occupancy_grid();
         _map_slam_pub.publish(_map);
         _cloud_slam_pub.publish(cloud_odom);
+        broadcast_map_tf();
         _tf_broadcaster.sendTransform(transform_base_link_slam_to_odom);
 
         loop_rate.sleep();
@@ -154,6 +161,80 @@ nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
 }
 
 // --- map utils ---
+
+tf2::Transform LocalSlamNode::run_ceres_solver(
+    const sensor_msgs::LaserScan& scan, 
+    const tf2::Transform& initial_guess, 
+    const slam::DoubleOccupancyGrid& map)
+{
+    if (map.data.empty()) return initial_guess;
+
+    // 1. Convert Initial Guess (TF2) to Optimization Array (double[3])
+    double pose[3];
+    pose[0] = initial_guess.getOrigin().x();
+    pose[1] = initial_guess.getOrigin().y();
+    
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(initial_guess.getRotation()).getRPY(roll, pitch, yaw);
+    pose[2] = yaw;
+
+    // 2. Build Ceres Problem
+    ceres::Problem problem;
+    
+    // We only use valid ranges
+    // Step size can be increased (e.g., i+=2 or i+=4) for performance
+    for (size_t i = 0; i < scan.ranges.size(); i += 2) {
+        float range = scan.ranges[i];
+        if (!std::isfinite(range) || range < scan.range_min || range > scan.range_max) 
+            continue;
+
+        // Calculate point in LASER FRAME
+        float angle = scan.angle_min + i * scan.angle_increment;
+        double lx = range * std::cos(angle);
+        double ly = range * std::sin(angle);
+
+        // Create Cost Function
+        // AutoDiffCostFunction handles the calculus (derivatives) automatically using templates.
+        // <PointToMapResidual, 1, 3> means:
+        //   1: Size of Residual (1 scalar error value)
+        //   3: Size of Parameter (x, y, theta)
+        ceres::CostFunction* cost_function =
+            new ceres::AutoDiffCostFunction<PointToMapResidual, 1, 3>(
+                new PointToMapResidual(lx, ly, map.data, 
+                                     map.info.width, map.info.height, 
+                                     map.info.resolution,
+                                     map.info.origin.position.x, 
+                                     map.info.origin.position.y)
+            );
+
+        // Add Residual Block
+        problem.AddResidualBlock(cost_function, nullptr, pose);
+    }
+
+    // 3. Configure Solver
+    ceres::Solver::Options options;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.max_num_iterations = 20; // Keep it fast for real-time
+    options.minimizer_progress_to_stdout = false;
+
+    // 4. Solve
+    ceres::Solver::Summary summary;
+    ceres::Solve(options, &problem, &summary);
+
+    ROS_INFO("Ceres Solver: %s", summary.BriefReport().c_str());
+
+    // 5. Convert Result back to TF2
+    tf2::Transform result_tf;
+    tf2::Vector3 origin(pose[0], pose[1], 0.0);
+    tf2::Quaternion rotation;
+    rotation.setRPY(0, 0, pose[2]); // Assuming 2D planar
+    
+    result_tf.setOrigin(origin);
+    result_tf.setRotation(rotation);
+
+    return result_tf;
+}
+
 void LocalSlamNode::init_map(){
     _double_map.header.frame_id = "map";
     _double_map.info.map_load_time = ros::Time::now();
@@ -167,6 +248,26 @@ void LocalSlamNode::init_map(){
     _double_map.info.origin.orientation.w = 1.0; // No rotation
     // Initialize map data to unknown (-1)
     _double_map.data.resize(_double_map.info.width * _double_map.info.height, -1);
+}
+
+void LocalSlamNode::broadcast_map_tf()
+{
+    geometry_msgs::Vector3 translation;
+    translation.x = 0;
+    translation.y = 0;
+    translation.z = 0;
+    geometry_msgs::Quaternion rotation;
+    rotation.w = 1;
+    rotation.x = 0;
+    rotation.y = 0;
+    rotation.z = 0;
+    geometry_msgs::TransformStamped tf_stamped;
+    tf_stamped.header.stamp = ros::Time::now();
+    tf_stamped.header.frame_id = "map";
+    tf_stamped.child_frame_id = "odom";
+    tf_stamped.transform.translation = translation;
+    tf_stamped.transform.rotation = rotation;
+    _tf_broadcaster.sendTransform(tf_stamped);
 }
 
 int LocalSlamNode::world_to_map_index(double x, double y){
@@ -187,7 +288,9 @@ int LocalSlamNode::world_to_map_index(double x, double y){
 // Bayesian Occupancy Grid Mapping Update
 void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
 {
-    double P_HIT = 1 / exp(1);   // Probability of hit
+    // Probability Constants
+    const double P_HIT = 0.55;  // Slightly above 0.5
+    const double P_MISS = 0.45; // Slightly below 0.5
 
     if (_double_map.data.empty()){
         init_map();
@@ -195,37 +298,52 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
     if (cloud.points.empty()){
         return;
     }
-    // For each point in the point cloud
+
+    // 1. Get current robot position (The origin of the rays)
+    double robot_x = _odom_slam.pose.pose.position.x;
+    double robot_y = _odom_slam.pose.pose.position.y;
+
     for (const auto& point : cloud.points){
-        int index = world_to_map_index(point.x, point.y);
-        if (index == -1){
-            continue;   // Skip points out of bounds
+        // 2. Update the "Hit" point (The wall)
+        int hit_index = world_to_map_index(point.x, point.y);
+        if (hit_index != -1){
+            if (_double_map.data[hit_index] == -1) _double_map.data[hit_index] = 0.5; // Init
+            _double_map.data[hit_index] = clamp(inv_odds(odds(_double_map.data[hit_index]) * odds(P_HIT)));
         }
-        // Update occupancy probability using log-odds
-        if (_double_map.data[index] == -1){
-            _double_map.data[index] = P_HIT; // Initialize hit point to be 2/3 probability
-        }
-        else{
-            //Mnew(x) = clamp(odds−1(odds(Mold(x)) · odds(phit)))
-            _double_map.data[index] = clamp(inv_odds(odds(_double_map.data[index]) * odds(P_HIT)));
-        }
-        // for those grids along the ray, we update them as miss points
-        for (int i = 0; i < point.x; i += MAP_RESOLUTION){
-            int miss_index = world_to_map_index(i, point.y/point.x * i);
-            if (miss_index == -1 || miss_index == index){
+
+        // 3. Ray Trace for "Miss" points (Free space between Robot and Wall)
+        // We use the distance vector logic, not just X axis
+        double dx = point.x - robot_x;
+        double dy = point.y - robot_y;
+        double distance = std::sqrt(dx*dx + dy*dy);
+        
+        // Normalized direction vector
+        double unit_x = dx / distance;
+        double unit_y = dy / distance;
+
+        // Step along the ray
+        // FIX: Use double 'r', not int
+        for (double r = 0; r < distance; r += MAP_RESOLUTION) {
+            
+            // Calculate intermediate point
+            double check_x = robot_x + unit_x * r;
+            double check_y = robot_y + unit_y * r;
+
+            int miss_index = world_to_map_index(check_x, check_y);
+
+            // Don't update if out of bounds or if we hit the wall itself
+            if (miss_index == -1 || miss_index == hit_index) {
                 continue;
             }
-            if (_double_map.data[miss_index] == -1){
-                _double_map.data[miss_index] = 1 / (exp(1)*(point.x*point.x))*i*i; // Initialize miss point to be a x squared probability where the max is 1/e
-            }
-            else{
-                // Mnew(x) = clamp(odds−1(odds(Mold(x)) · odds(pmiss)))
-                double P_MISS = 1 / (exp(1)*(point.x*point.x))*i*i;
-                _double_map.data[miss_index] = clamp(inv_odds(odds(_double_map.data[miss_index]) * odds(P_MISS)));
-            }
+
+            // Update free space
+            if (_double_map.data[miss_index] == -1) _double_map.data[miss_index] = 0.5; // Init
+            
+            _double_map.data[miss_index] = clamp(inv_odds(odds(_double_map.data[miss_index]) * odds(P_MISS)));
         }
     }
 }
+
 
 nav_msgs::OccupancyGrid LocalSlamNode::convert_double_map_to_occupancy_grid(){
     nav_msgs::OccupancyGrid occupancy_grid;
