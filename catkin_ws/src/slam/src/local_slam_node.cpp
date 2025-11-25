@@ -217,8 +217,8 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
         problem.AddResidualBlock(cost_function, nullptr, pose);
     }
 
-    double ALPHA_POS = 10.0;
-    double ALPHA_ROT = 50.0; // Higher weight on rotation to prevent large angular drift
+    double ALPHA_POS = 1.0;
+    double ALPHA_ROT = 5.0; // Higher weight on rotation to prevent large angular drift
 
     ceres::CostFunction* prior_cost_function =
         new ceres::AutoDiffCostFunction<PosePriorResidual, 3, 3>(
@@ -259,8 +259,9 @@ void LocalSlamNode::init_map(){
     _double_map.info.resolution = MAP_RESOLUTION;
     _double_map.info.width = MAP_WIDTH;
     _double_map.info.height = MAP_HEIGHT;
-    _double_map.info.origin.position.x = 0; // Centered at (0,0)
-    _double_map.info.origin.position.y = 0;
+    _double_map.info.origin.position.x = - (MAP_WIDTH * MAP_RESOLUTION) / 2.0; // Centered at (0,0)
+    _double_map.info.origin.position.y = - (MAP_HEIGHT * MAP_RESOLUTION) / 2.0;
+
     _double_map.info.origin.position.z = 0.0;
     _double_map.info.origin.orientation.w = 1.0; // No rotation
     // Initialize map data to unknown (-1)
