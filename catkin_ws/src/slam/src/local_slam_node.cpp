@@ -82,7 +82,7 @@ void LocalSlamNode::slam_thread()
 
             // _odom_slam_tf = run_ceres_solver(laser_scan, _odom_slam_tf, map);
 
-            _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link");
+            _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link_slam");
         }
 
         // D
