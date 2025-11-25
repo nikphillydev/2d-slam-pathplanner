@@ -101,3 +101,41 @@ struct PointToMapResidual {
     const double origin_x_;
     const double origin_y_;
 };
+
+
+struct PosePriorResidual {
+    // Constructor to initialize the prior pose and weights
+    // alpha_pos: weight for position (x, y)
+    // alpha_rot: weight for rotation (theta)
+    PosePriorResidual(double x_head, double y_head, double theta_head, double alpha_pos, double alpha_rot)
+        : _x_head(x_head), _y_head(y_head), _theta_head(theta_head), 
+          _sqrt_alpha_pos(std::sqrt(alpha_pos)), 
+          _sqrt_alpha_rot(std::sqrt(alpha_rot)) {}
+
+    template <typename T>
+    bool operator()(const T* const pose, T* residuals) const {
+        // pose[0]: x, pose[1]: y, pose[2]: theta
+        
+        // 1. Translation Error
+        // residual = sqrt(alpha) * (x - x_head)
+        residuals[0] = T(_sqrt_alpha_pos) * (pose[0] - T(_x_head));
+        residuals[1] = T(_sqrt_alpha_pos) * (pose[1] - T(_y_head));
+
+        // 2. Rotation Error
+        // Angle needs to handle periodicity (-pi to pi)
+        // But for Local SLAM (high-frequency updates), simple subtraction is usually sufficient.
+        // For rigor, you can use ceres tools or simple normalization logic.
+        T theta_diff = pose[2] - T(_theta_head);
+        
+        // Simple angle normalization logic to prevent jumps (optional but recommended)
+        // while (theta_diff > T(M_PI)) theta_diff -= T(2 * M_PI);
+        // while (theta_diff < T(-M_PI)) theta_diff += T(2 * M_PI);
+
+        residuals[2] = T(_sqrt_alpha_rot) * theta_diff;
+
+        return true;
+    }
+
+    const double _x_head, _y_head, _theta_head;
+    const double _sqrt_alpha_pos, _sqrt_alpha_rot;
+};

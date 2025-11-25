@@ -86,26 +86,28 @@ void LocalSlamNode::slam_thread()
 
             _odom_slam_tf = _odom_slam_tf * tf_delta;
 
+            // Laser Scan to Point Cloud in Odom Frame
+
+            sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
+            geometry_msgs::TransformStamped transform_laser_to_base_link;
+            try{
+                transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, laser_scan.header.stamp);
+            }
+            catch (tf2::TransformException &ex) {
+                ROS_WARN("%s",ex.what());
+                continue;
+            }
+
+            sensor_msgs::PointCloud cloud_base_link;
+            if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) return;
+
             // C
             // Ceres Solver Update
-            _odom_slam_tf = run_ceres_solver(laser_scan, _odom_slam_tf, _double_map);
+            _odom_slam_tf = run_ceres_solver(cloud_base_link, _odom_slam_tf, _double_map);
             _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link_slam");
         }
 
         // D
-        
-        sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
-        geometry_msgs::TransformStamped transform_laser_to_base_link;
-        try{
-            transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
-        }
-        catch (tf2::TransformException &ex) {
-            ROS_WARN("%s",ex.what());
-            ros::Duration(1.0).sleep();
-            continue;
-        }
-        sensor_msgs::PointCloud cloud_base_link;
-        if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) return;
 
         geometry_msgs::TransformStamped transform_base_link_slam_to_odom = create_transform_stamped_from_transform(_odom_slam_tf, "odom", "base_link_slam");
 
@@ -163,11 +165,11 @@ nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
 // --- map utils ---
 
 tf2::Transform LocalSlamNode::run_ceres_solver(
-    const sensor_msgs::LaserScan& scan, 
+    const sensor_msgs::PointCloud& cloud_base, 
     const tf2::Transform& initial_guess, 
     const slam::DoubleOccupancyGrid& map)
 {
-    if (map.data.empty()) return initial_guess;
+    if (map.data.empty() || cloud_base.points.empty()) return initial_guess;
 
     // 1. Convert Initial Guess (TF2) to Optimization Array (double[3])
     double pose[3];
@@ -178,20 +180,20 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
     tf2::Matrix3x3(initial_guess.getRotation()).getRPY(roll, pitch, yaw);
     pose[2] = yaw;
 
+
+    // save raw pose for xi_head
+    double initial_x = pose[0];
+    double initial_y = pose[1];
+    double initial_theta = pose[2];
+
     // 2. Build Ceres Problem
     ceres::Problem problem;
     
     // We only use valid ranges
     // Step size can be increased (e.g., i+=2 or i+=4) for performance
-    for (size_t i = 0; i < scan.ranges.size(); i += 2) {
-        float range = scan.ranges[i];
-        if (!std::isfinite(range) || range < scan.range_min || range > scan.range_max) 
-            continue;
-
-        // Calculate point in LASER FRAME
-        float angle = scan.angle_min + i * scan.angle_increment;
-        double lx = range * std::cos(angle);
-        double ly = range * std::sin(angle);
+    for (size_t i = 0; i < cloud_base.points.size(); i += 2) {
+        double p_x = cloud_base.points[i].x;
+        double p_y = cloud_base.points[i].y;
 
         // Create Cost Function
         // AutoDiffCostFunction handles the calculus (derivatives) automatically using templates.
@@ -200,7 +202,8 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
         //   3: Size of Parameter (x, y, theta)
         ceres::CostFunction* cost_function =
             new ceres::AutoDiffCostFunction<PointToMapResidual, 1, 3>(
-                new PointToMapResidual(lx, ly, map.data, 
+                new PointToMapResidual(p_x, p_y,
+                                     map.data, 
                                      map.info.width, map.info.height, 
                                      map.info.resolution,
                                      map.info.origin.position.x, 
@@ -211,6 +214,17 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
         problem.AddResidualBlock(cost_function, nullptr, pose);
     }
 
+    double ALPHA_POS = 10.0;
+    double ALPHA_ROT = 50.0; // Higher weight on rotation to prevent large angular drift
+
+    ceres::CostFunction* prior_cost_function =
+        new ceres::AutoDiffCostFunction<PosePriorResidual, 3, 3>(
+            new PosePriorResidual(initial_x, initial_y, initial_theta, 
+                                  ALPHA_POS, ALPHA_ROT)
+        );
+
+    problem.AddResidualBlock(prior_cost_function, nullptr, pose);
+    
     // 3. Configure Solver
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_QR;
