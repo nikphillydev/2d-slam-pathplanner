@@ -59,35 +59,32 @@ void LocalSlamNode::slam_thread()
         if (is_first_iteration)
         {
             _odom_slam = odom_filtered;
+            _odom_slam.child_frame_id = "base_link_slam";
+            _odom_slam_tf = create_transform_from_odom(_odom_slam);
             is_first_iteration = false;
             ROS_INFO("SLAM Starting!");
         }
         else
         {   
-            // Prediction
-
             // A
+
             tf2::Transform tf_odom_prev = create_transform_from_odom(_last_odom_filtered);
             tf2::Transform tf_odom_curr = create_transform_from_odom(odom_filtered);
             tf2::Transform tf_delta = tf_odom_prev.inverse() * tf_odom_curr;
 
             // B
+            // Prediction
 
-            tf2::Transform tf_slam_prev = create_transform_from_odom(_odom_slam);
-            tf2::Transform tf_slam = tf_slam_prev * tf_delta;
-            _odom_slam = create_odom_from_transform(tf_slam, "odom", "base_link");
+            _odom_slam_tf = _odom_slam_tf * tf_delta;
 
-            // Update
+            // C 
+            // Update with Ceres Solver
 
-            // C Ceres Solver Solving
+            // _odom_slam_tf = run_ceres_solver(laser_scan, _odom_slam_tf, map);
 
-            // tf_slam_corrected = run_ceres_solver(laser_scan, tf_slam_pred, map);
-
-            tf2::Transform tf_slam_corrected = tf_slam; // placeholder for corrected pose
-
-            _odom_slam = create_odom_from_transform(tf_slam_corrected, "odom", "base_link");
-            
+            _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link");
         }
+
         // D
         
         sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
@@ -103,12 +100,10 @@ void LocalSlamNode::slam_thread()
         sensor_msgs::PointCloud cloud_base_link;
         if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) return;
 
-        geometry_msgs::TransformStamped transform_base_link_to_odom = create_transform_stamped_from_odom(_odom_slam);
+        geometry_msgs::TransformStamped transform_base_link_slam_to_odom = create_transform_stamped_from_transform(_odom_slam_tf, "odom", "base_link_slam");
 
         sensor_msgs::PointCloud cloud_odom;
-        if (!transform_point_cloud(cloud_base_link, cloud_odom, transform_base_link_to_odom));
-        
-        _cloud_slam_pub.publish(cloud_odom);
+        if (!transform_point_cloud(cloud_base_link, cloud_odom, transform_base_link_slam_to_odom));
 
         // E
 
@@ -118,7 +113,10 @@ void LocalSlamNode::slam_thread()
 
         _last_odom_filtered = odom_filtered;
 
-        // publish shit
+        _odom_slam_pub.publish(_odom_slam);
+        _map_slam_pub.publish(_map);
+        _cloud_slam_pub.publish(cloud_odom);
+        _tf_broadcaster.sendTransform(transform_base_link_slam_to_odom);
 
         loop_rate.sleep();
     }
@@ -210,7 +208,7 @@ void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
             _double_map.data[index] = clamp(inv_odds(odds(_double_map.data[index]) * odds(P_HIT)));
         }
         // for those grids along the ray, we update them as miss points
-        for (i = 0; i < point.x; i += MAP_RESOLUTION){
+        for (int i = 0; i < point.x; i += MAP_RESOLUTION){
             int miss_index = world_to_map_index(i, point.y/point.x * i);
             if (miss_index == -1 || miss_index == index){
                 continue;
