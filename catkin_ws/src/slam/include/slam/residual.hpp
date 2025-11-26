@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cmath>
 #include <ceres/ceres.h>
 #include <ceres/jet.h>
 
@@ -13,7 +14,6 @@ inline double GetScalar(const T& x) {
 }
 
 // Case 2: T is a Ceres Jet (Derivative evaluation)
-// We extract '.a' which represents the scalar value of the variable
 template <typename T, int N>
 inline double GetScalar(const ceres::Jet<T, N>& x) {
     return x.a;
@@ -35,61 +35,75 @@ struct PointToMapResidual {
     bool operator()(const T* const pose, T* residual) const {
         // pose[0] = x, pose[1] = y, pose[2] = theta
 
-        T theta = pose[2];
+        const T& x = pose[0];
+        const T& y = pose[1];
+        const T& theta = pose[2];
+
         T cos_th = ceres::cos(theta);
         T sin_th = ceres::sin(theta);
 
-        // Transform point to World Frame
-        T trans_x = cos_th * T(point_x_) - sin_th * T(point_y_) + pose[0];
-        T trans_y = sin_th * T(point_x_) + cos_th * T(point_y_) + pose[1];
+        // 1. base_link → world/odom
+        T trans_x = cos_th * T(point_x_) - sin_th * T(point_y_) + x;
+        T trans_y = sin_th * T(point_x_) + cos_th * T(point_y_) + y;
 
-        // Convert to Map Indices
+        // 2. world → map
         T map_x = (trans_x - T(origin_x_)) / T(resolution_);
         T map_y = (trans_y - T(origin_y_)) / T(resolution_);
 
-        // Perform Interpolation
-        T probability = GetBiLinearInterpolation(map_x, map_y);
+        // 3. Bi-Linear Interpolation
+        T probability;
+        bool valid = GetBiLinearInterpolation(map_x, map_y, probability);
 
-        // Residual = 1.0 - Probability (We want to maximize probability)
+        if (!valid) {
+            // unknown
+            residual[0] = T(0.0);
+            return true;
+        }
+
+        // 4. Residual: 1.0 - probability of being occupied
         residual[0] = T(1.0) - probability; 
 
         return true;
     }
 
     template <typename T>
-    T GetBiLinearInterpolation(const T& x, const T& y) const {
-        // Use the helper to cast to integer indices
-        // We cannot differentiate through the Index selection (it's a step function),
-        // so we use the scalar value to find the cell.
-        int x0 = (int)GetScalar(x);
-        int y0 = (int)GetScalar(y);
+    bool GetBiLinearInterpolation(const T& x, const T& y, T& probability) const {
+        // index
+        double fx = GetScalar(x);
+        double fy = GetScalar(y);
+
+        int x0 = static_cast<int>(std::floor(fx));
+        int y0 = static_cast<int>(std::floor(fy));
         int x1 = x0 + 1;
         int y1 = y0 + 1;
 
-        // Check Bounds
+        // 1. Boundary Check
         if (x0 < 0 || x1 >= width_ || y0 < 0 || y1 >= height_) {
-            return T(0.0);
+            return false;
         }
 
-        // Fetch Map Values (Probability 0.0 to 1.0)
-        double v00 = map_data_[y0 * width_ + x0];
-        double v10 = map_data_[y0 * width_ + x1];
-        double v01 = map_data_[y1 * width_ + x0];
-        double v11 = map_data_[y1 * width_ + x1];
+        auto sample = [&](int ix, int iy) -> double {
+            return map_data_[iy * width_ + ix];
+        };
 
-        // Calculate Weights (These ARE differentiable)
-        T wa = (T(x1) - x);
-        T wb = (x - T(x0));
-        T wc = (y - T(y0)); // Top weight
-        T wd = (T(y1) - y); // Bottom weight
+        double v00 = sample(x0, y0);
+        double v10 = sample(x1, y0);
+        double v01 = sample(x0, y1);
+        double v11 = sample(x1, y1);
 
-        // Bilinear Interpolation Formula
-        // Interpolate X at bottom (y0) and top (y1)
-        T val_bottom = T(v00) * wa + T(v10) * wb;
-        T val_top    = T(v01) * wa + T(v11) * wb;
+        if (v00 < 0.0 || v10 < 0.0 || v01 < 0.0 || v11 < 0.0) {
+            return false;
+        }
 
-        // Interpolate Y
-        return val_bottom * wd + val_top * wc;
+        double tx = fx - x0;
+        double ty = fy - y0;
+
+        double val_bottom = (1.0 - tx) * v00 + tx * v10;
+        double val_top    = (1.0 - tx) * v01 + tx * v11;
+        double val        = (1.0 - ty) * val_bottom + ty * val_top;
+
+        probability = T(val);
+        return true;
     }
 
     const double point_x_;
@@ -104,10 +118,10 @@ struct PointToMapResidual {
 
 
 struct PosePriorResidual {
-    // Constructor to initialize the prior pose and weights
     // alpha_pos: weight for position (x, y)
     // alpha_rot: weight for rotation (theta)
-    PosePriorResidual(double x_head, double y_head, double theta_head, double alpha_pos, double alpha_rot)
+    PosePriorResidual(double x_head, double y_head, double theta_head, 
+                      double alpha_pos, double alpha_rot)
         : _x_head(x_head), _y_head(y_head), _theta_head(theta_head), 
           _sqrt_alpha_pos(std::sqrt(alpha_pos)), 
           _sqrt_alpha_rot(std::sqrt(alpha_rot)) {}
@@ -117,19 +131,11 @@ struct PosePriorResidual {
         // pose[0]: x, pose[1]: y, pose[2]: theta
         
         // 1. Translation Error
-        // residual = sqrt(alpha) * (x - x_head)
         residuals[0] = T(_sqrt_alpha_pos) * (pose[0] - T(_x_head));
         residuals[1] = T(_sqrt_alpha_pos) * (pose[1] - T(_y_head));
 
         // 2. Rotation Error
-        // Angle needs to handle periodicity (-pi to pi)
-        // But for Local SLAM (high-frequency updates), simple subtraction is usually sufficient.
-        // For rigor, you can use ceres tools or simple normalization logic.
         T theta_diff = pose[2] - T(_theta_head);
-        
-        // Simple angle normalization logic to prevent jumps (optional but recommended)
-        // while (theta_diff > T(M_PI)) theta_diff -= T(2 * M_PI);
-        // while (theta_diff < T(-M_PI)) theta_diff += T(2 * M_PI);
 
         residuals[2] = T(_sqrt_alpha_rot) * theta_diff;
 

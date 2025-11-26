@@ -47,6 +47,12 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(slam_node src/main.cpp src/local_slam_node.cpp)
+add_executable(simple_nav_node src/simple_nav_node.cpp)
+
+target_link_libraries(simple_nav_node
+  ${catkin_LIBRARIES}
+)
+
 
 ## Specify libraries to link executable target against
 target_link_libraries(slam_node

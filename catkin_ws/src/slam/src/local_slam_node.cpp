@@ -43,7 +43,7 @@ void LocalSlamNode::slam_thread()
 {
     bool is_first_iteration = true;
     
-    ros::Rate loop_rate(1000);
+    ros::Rate loop_rate(50);
     
     while(ros::ok())
     {
@@ -106,7 +106,12 @@ void LocalSlamNode::slam_thread()
 
             // C
             // Ceres Solver Update
+            
+            
+            
             _odom_slam_tf = run_ceres_solver(cloud_base_link, _odom_slam_tf, _double_map);
+            
+            
             _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link_slam");
         }
 
@@ -217,8 +222,8 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
         problem.AddResidualBlock(cost_function, nullptr, pose);
     }
 
-    double ALPHA_POS = 1.0;
-    double ALPHA_ROT = 5.0; // Higher weight on rotation to prevent large angular drift
+    double ALPHA_POS = 40.0;
+    double ALPHA_ROT = 100.0; // Higher weight on rotation to prevent large angular drift
 
     ceres::CostFunction* prior_cost_function =
         new ceres::AutoDiffCostFunction<PosePriorResidual, 3, 3>(
@@ -311,8 +316,8 @@ int LocalSlamNode::world_to_map_index(double x, double y)
 void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
 {
     // Probability Constants
-    const double P_HIT = 0.55;
-    const double P_MISS = 0.45;
+    const double P_HIT = 0.2;
+    const double P_MISS = 0.8;
 
     if (_double_map.data.empty()){
         init_map();
