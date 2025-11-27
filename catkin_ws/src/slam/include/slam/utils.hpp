@@ -138,20 +138,28 @@ geometry_msgs::TransformStamped invert_transform(const geometry_msgs::TransformS
     return ts_inv;
 }
 
-double odds(double p){
+double odds(double p)
+{
     return p / (1.0 - p);
 }
-double inv_odds(double o){
-    return (o) / (1.0 + o);
+
+double inv_odds(double p)
+{
+    return p / (1.0 + p);
 }
+
 double clamp(double val)
 {  
-    // clamp value between 0.001 and 0.9
-    if (val < 0.001) {
+    if (val < 0.001) 
+    {
         return 0.001;
-    } else if (val > 0.9){
-        return 0.9;
-    } else {
+    } 
+    else if (val > 0.999)
+    {
+        return 0.999;
+    } 
+    else 
+    {
         return val;
     }
 }

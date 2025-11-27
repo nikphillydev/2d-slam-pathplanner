@@ -13,50 +13,47 @@ LocalSlamNode::LocalSlamNode()
     _odom_filtered_sub = _nh.subscribe<nav_msgs::Odometry>("/odometry/filtered", 1000, &LocalSlamNode::odom_filtered_callback, this);
 
     // create publishers
-    _odom_slam_pub = _nh.advertise<nav_msgs::Odometry>("/odometry/slam", 1000);
     _map_slam_pub = _nh.advertise<nav_msgs::OccupancyGrid>("/map/slam", 1000);
-    _cloud_slam_pub = _nh.advertise<sensor_msgs::PointCloud>("/cloud/slam", 1000);
 
-    // start worker thread
-    _slam_thread_handle = std::thread(&LocalSlamNode::slam_thread, this);
-
-    // Initialize
+    // initialization
     init_map();
-    broadcast_map_tf();
+    _tf_map_to_odom.setIdentity();      // align map frame with odom frame
+
+    // start worker threads
+    _slam_thread_handle = std::thread(&LocalSlamNode::slam_thread, this);
+    _publisher_thread_handle = std::thread(&LocalSlamNode::publisher_thread, this);
 
     ROS_INFO("LocalSlamNode has started");
 }
 
 LocalSlamNode::~LocalSlamNode() 
 {
-    if (_slam_thread_handle.joinable())
-    {
-        _slam_thread_handle.join();
-    }
+    if (_slam_thread_handle.joinable()) _slam_thread_handle.join();
+    if (_publisher_thread_handle.joinable()) _publisher_thread_handle.join();
 
     ROS_INFO("LocalSlamNode has stopped");
 }
 
-// --- worker thread ---
+// --- worker threads ---
 
 void LocalSlamNode::slam_thread()
 {
     bool is_first_iteration = true;
-    
-    ros::Rate loop_rate(50);
+    ros::Rate loop_rate(20);
     
     while(ros::ok())
     {
         ROS_INFO("slam thread running");
+        ros::Time start;
+        double duration;
+
+        // Get the latest sensor data
+        start = ros::Time::now();
 
         sensor_msgs::LaserScan laser_scan = get_laser_scan();
         nav_msgs::Odometry odom_filtered = get_odom_filtered();
 
-        // std::stringstream debug;
-        // debug << "Laser scan frame: " << laser_scan.header.frame_id << " Odometry frame: " << odom_filtered.header.frame_id << std::endl;
-        // ROS_INFO("%s", debug.str().c_str());
-
-        // check both msgs have valid data
+        // Check both msgs have valid data
         if (laser_scan.header.stamp.toSec() == 0 || odom_filtered.header.stamp.toSec() == 0)
         {
             ROS_INFO("No data received, waiting...");
@@ -64,100 +61,108 @@ void LocalSlamNode::slam_thread()
             continue;
         }
 
+        duration = (ros::Time::now() - start).toSec();
+        ROS_INFO("GET took: %f seconds", duration);
+
         // Extract point cloud from laser scan
+        start = ros::Time::now();
+
         sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
-        sensor_msgs::PointCloud cloud_base_link_slam;
-        geometry_msgs::TransformStamped transform_laser_to_base_link;
+        sensor_msgs::PointCloud cloud_base;
+        geometry_msgs::TransformStamped tf_base_to_laser;
         try{
-            transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
+            tf_base_to_laser = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
         }
         catch (tf2::TransformException &ex) {
             ROS_WARN("%s",ex.what());
             loop_rate.sleep();
             continue;
         }
-        transform_point_cloud(cloud_laser, cloud_base_link_slam, transform_laser_to_base_link);
+        transform_point_cloud(cloud_laser, cloud_base, tf_base_to_laser);
 
+        duration = (ros::Time::now() - start).toSec();
+        ROS_INFO("PC LASER to BASE TRANSFORM took: %f seconds", duration);
+        
         if (is_first_iteration)
         {
-            _odom_slam = odom_filtered;
-            _odom_slam.child_frame_id = "base_link_slam";
-            _odom_slam_tf = create_transform_from_odom(_odom_slam);
+            _last_odom_filtered = odom_filtered;
+
             is_first_iteration = false;
             ROS_INFO("SLAM Starting!");
         }
-        else
-        {   
-            // A
+        
+        // --- Prediction Step using Odometry (from EKF) ---
+        start = ros::Time::now();
 
-            tf2::Transform tf_odom_prev = create_transform_from_odom(_last_odom_filtered);
-            tf2::Transform tf_odom_curr = create_transform_from_odom(odom_filtered);
-            tf2::Transform tf_delta = tf_odom_prev.inverse() * tf_odom_curr;
+        // Calculate differential motion since last cycle
+        tf2::Transform tf_odom_to_base_prev = create_transform_from_odom(_last_odom_filtered);
+        tf2::Transform tf_odom_to_base = create_transform_from_odom(odom_filtered);
+        tf2::Transform tf_delta = tf_odom_to_base_prev.inverse() * tf_odom_to_base;
 
-            // B
-            // Odometry Prediction
+        // Calculate the last corrected SLAM pose
+        tf2::Transform tf_map_to_base_prev = get_tf_map_to_odom() * tf_odom_to_base_prev;
 
-            _odom_slam_tf = _odom_slam_tf * tf_delta;
+        // Apply differential motion to previous correction
+        tf2::Transform tf_map_to_base_guess = tf_map_to_base_prev * tf_delta;
 
+        duration = (ros::Time::now() - start).toSec();
+        ROS_INFO("Prediction took: %f seconds", duration);
 
-            // C
-            // Ceres Solver Update
-            _odom_slam_tf = run_ceres_solver(cloud_base_link_slam, _odom_slam_tf, _double_map);
-            _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link_slam");
+        // --- Correction Step using Ceres Solver ---
+        start = ros::Time::now();
+
+        tf2::Transform tf_map_to_base_corrected;
+        {
+            std::lock_guard<std::mutex> lock(_double_map_mutex);
+            tf_map_to_base_corrected = run_ceres_solver(cloud_base, tf_map_to_base_guess, _double_map);
         }
 
-        // D
+        duration = (ros::Time::now() - start).toSec();
+        ROS_INFO("Correction took: %f seconds", duration);
 
-        geometry_msgs::TransformStamped transform_base_link_slam_to_odom = create_transform_stamped_from_transform(_odom_slam_tf, "odom", "base_link_slam");
-        sensor_msgs::PointCloud cloud_odom;
-        transform_point_cloud(cloud_base_link_slam, cloud_odom, transform_base_link_slam_to_odom);
+        // --- Update Step ---
+        start = ros::Time::now();
 
-        // E
+        set_tf_map_to_odom(tf_map_to_base_corrected * tf_odom_to_base.inverse());
 
-        update_map(cloud_odom);
+        geometry_msgs::TransformStamped tf_map_to_base = create_transform_stamped_from_transform(tf_map_to_base_corrected, "map", "base_link");
+        sensor_msgs::PointCloud cloud_map;
+        transform_point_cloud(cloud_base, cloud_map, tf_map_to_base);
 
-        // F
+        geometry_msgs::Pose robot_pose_map;
+        tf2::toMsg(tf_map_to_base_corrected, robot_pose_map);
+        update_map(robot_pose_map, cloud_map);
+
+        duration = (ros::Time::now() - start).toSec();
+        ROS_INFO("Update took: %f seconds", duration);
 
         _last_odom_filtered = odom_filtered;
-
-        _odom_slam_pub.publish(_odom_slam);
-        _map = convert_double_map_to_occupancy_grid();
-        _map_slam_pub.publish(_map);
-        _cloud_slam_pub.publish(cloud_odom);
-        broadcast_map_tf();
-        _tf_broadcaster.sendTransform(transform_base_link_slam_to_odom);
 
         loop_rate.sleep();
     }
 }
 
-// --- ros callbacks ---
-
-void LocalSlamNode::front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
+void LocalSlamNode::publisher_thread()
 {
-    std::lock_guard<std::mutex> lock(_laser_scan_mutex);
-    _laser_scan = std::move(*msg);
-}
+    ros::Rate loop_rate(50);        // high rate TF publishing
+    
+    while(ros::ok())
+    {
+        // Broadcast dynamic TF: map -> odom
+        geometry_msgs::TransformStamped tf_stamped = create_transform_stamped_from_transform(get_tf_map_to_odom(), "map", "odom");
+        _tf_broadcaster.sendTransform(tf_stamped);
+        
+        // Publish map (throttled)
+        static int map_pub_counter = 0;
+        if (map_pub_counter++ > 50) 
+        {
+            _map = convert_double_map_to_occupancy_grid(get_double_map());
+            _map_slam_pub.publish(_map); 
+            map_pub_counter = 0;
+        }
 
-void LocalSlamNode::odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg)
-{
-    std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
-    _odom_filtered = std::move(*msg);
-}
-
-// --- getters / setters ---
-
-sensor_msgs::LaserScan LocalSlamNode::get_laser_scan()
-{
-    std::lock_guard<std::mutex> lock(_laser_scan_mutex);
-    return _laser_scan;
-}
-
-
-nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
-{
-    std::lock_guard<std::mutex> lock(_odom_filtered_mutex);
-    return _odom_filtered;
+        loop_rate.sleep();
+    }
 }
 
 // --- map utils ---
@@ -177,7 +182,6 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
     double roll, pitch, yaw;
     tf2::Matrix3x3(initial_guess.getRotation()).getRPY(roll, pitch, yaw);
     pose[2] = yaw;
-
 
     // save raw pose for xi_head
     double initial_x = pose[0];
@@ -226,7 +230,7 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
     // 3. Configure Solver
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_QR;
-    options.max_num_iterations = 50; // Keep it fast for real-time
+    options.max_num_iterations = 30; // Keep it fast for real-time
     options.minimizer_progress_to_stdout = false;
 
     // 4. Solve
@@ -247,137 +251,224 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
     return result_tf;
 }
 
-void LocalSlamNode::init_map(){
-    _double_map.header.frame_id = "map";
-    _double_map.info.map_load_time = ros::Time::now();
-    // Initialize occupancy grid map parameters
-    _double_map.info.resolution = MAP_RESOLUTION;
-    _double_map.info.width = MAP_WIDTH;
-    _double_map.info.height = MAP_HEIGHT;
-    _double_map.info.origin.position.x = - (MAP_WIDTH * MAP_RESOLUTION) / 2.0; // Centered at (0,0)
-    _double_map.info.origin.position.y = - (MAP_HEIGHT * MAP_RESOLUTION) / 2.0;
+void LocalSlamNode::init_map()
+{
+    std::lock_guard<std::mutex> lock(_double_map_mutex);
 
-    _double_map.info.origin.position.z = 0.0;
-    _double_map.info.origin.orientation.w = 1.0; // No rotation
-    // Initialize map data to unknown (-1)
+    _double_map.header.stamp = ros::Time::now();
+    _double_map.header.frame_id = "map";
+
+    // --- map metadata ---
+
+    _double_map.info.map_load_time = ros::Time::now();       // the time at which the map was loaded
+    _double_map.info.resolution = MAP_RESOLUTION;            // meters per cell
+    _double_map.info.width = MAP_CELL_WIDTH;                 // cells
+    _double_map.info.height = MAP_CELL_HEIGHT;               // cells
+    
+    // origin represents the lower-left corner (not the geometric center) of the map in the map frame
+    // set origin to try and place robot near geometric center
+    _double_map.info.origin.position.x = -(_double_map.info.width * _double_map.info.resolution) / 2.0;
+    _double_map.info.origin.position.y = -(_double_map.info.height * _double_map.info.resolution) / 2.0;
+    _double_map.info.origin.orientation.w = 1.0;
+
+    // --- initialize map ---
+
+    // every cell unknown probability (-1)
     _double_map.data.resize(_double_map.info.width * _double_map.info.height, -1);
 }
 
-void LocalSlamNode::broadcast_map_tf()
+int LocalSlamNode::coord_to_map_index(double x, double y, const nav_msgs::MapMetaData& info)
 {
-    geometry_msgs::Vector3 translation;
-    translation.x = 0;
-    translation.y = 0;
-    translation.z = 0;
-    geometry_msgs::Quaternion rotation;
-    rotation.w = 1;
-    rotation.x = 0;
-    rotation.y = 0;
-    rotation.z = 0;
-    geometry_msgs::TransformStamped tf_stamped;
-    tf_stamped.header.stamp = ros::Time::now();
-    tf_stamped.header.frame_id = "map";
-    tf_stamped.child_frame_id = "odom";
-    tf_stamped.transform.translation = translation;
-    tf_stamped.transform.rotation = rotation;
-    _tf_broadcaster.sendTransform(tf_stamped);
-}
+    int map_x_index = coord_to_map_row(x, info);
+    int map_y_index = coord_to_map_col(y, info);
 
-int LocalSlamNode::world_to_map_index(double x, double y)
-{
-    double map_x = (x - _double_map.info.origin.position.x) / _double_map.info.resolution;
-    double map_y = (y - _double_map.info.origin.position.y) / _double_map.info.resolution;
-
-    int i = (int)map_x;
-    int j = (int)map_y;
-
-
-    if (i < 0 || i >= _double_map.info.width || j < 0 || j >= _double_map.info.height)
+    if (map_x_index < 0 || map_x_index >= info.width || 
+        map_y_index < 0 || map_y_index >= info.height)
     {
         // TODO update (double) the map size here
-        ROS_WARN("World coordinates out of map bounds");
+        ROS_WARN("WARNING: odom slam coordinates out of map bounds");
         return -1;
     }
 
-    return j * _double_map.info.width + i;
+    return map_y_index * info.width + map_x_index;
 }
 
-// Bayesian Occupancy Grid Mapping Update
-void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
+int LocalSlamNode::coord_to_map_row(double x, const nav_msgs::MapMetaData& info)
 {
+    double map_x = x - info.origin.position.x;                                      // translate the coordinates to map origin
+    int map_x_index = static_cast<int>(std::floor(map_x / info.resolution));        // scale by the resolution
+
+    if (map_x_index < 0 || map_x_index >= info.width) return -1;
+
+    return map_x_index;
+}
+
+int LocalSlamNode::coord_to_map_col(double y, const nav_msgs::MapMetaData& info)
+{
+    double map_y = y - info.origin.position.y;                                      // translate the coordinates to map origin
+    int map_y_index = static_cast<int>(std::floor(map_y / info.resolution));        // scale by the resolution
+
+    if (map_y_index < 0 || map_y_index >= info.height) return -1;
+
+    return map_y_index;
+}
+
+void LocalSlamNode::update_map(const geometry_msgs::Pose& scan_origin, const sensor_msgs::PointCloud& cloud)
+{
+    std::lock_guard<std::mutex> lock(_double_map_mutex);
+
+    _double_map.info.map_load_time = ros::Time::now();
+
+    // robot position in map frame
+    double r_x = scan_origin.position.x;
+    double r_y = scan_origin.position.y;
+    
+    // get robot index
+    int r_idx = coord_to_map_index(r_x, r_y, _double_map.info);
+
     // Probability Constants
-    const double P_HIT = 0.8;
-    const double P_MISS = 0.2;
+    const double P_HIT = 0.9;
+    const double P_MISS = 0.1;
 
-    if (_double_map.data.empty()){
-        init_map();
-    }
-    if (cloud.points.empty()){
-        return;
-    }
-
-    // 1. Get current robot position (The origin of the rays)
-    double robot_x = _odom_slam.pose.pose.position.x;
-    double robot_y = _odom_slam.pose.pose.position.y;
-
-    for (const auto& point : cloud.points){
-        // 2. Update the "Hit" point
-        int hit_index = world_to_map_index(point.x, point.y);
-        if (hit_index != -1){
-            if (_double_map.data[hit_index] == -1)
+    for (const auto& point : cloud.points)
+    {
+        // Update HIT
+        int hit_idx = coord_to_map_index(point.x, point.y, _double_map.info);
+        if (hit_idx != -1)
+        {
+            // index within map bounds
+            if (_double_map.data[hit_idx] == -1)
             {
-                _double_map.data[hit_index] = P_HIT; // Init
+                // unobserved grid point
+                _double_map.data[hit_idx] = P_HIT;
             }
-            _double_map.data[hit_index] = clamp(inv_odds(odds(_double_map.data[hit_index]) * odds(P_HIT)));
+            else 
+            {
+                _double_map.data[hit_idx] = clamp(inv_odds(odds(_double_map.data[hit_idx]) * odds(P_HIT)));
+            }
         }
 
-        // 3. Ray Trace for "Miss" points (Free space between Robot and Wall)
-        double dx = point.x - robot_x;
-        double dy = point.y - robot_y;
-        double distance = std::sqrt(dx*dx + dy*dy);
-        
-        // Normalized direction vector
-        double unit_x = dx / distance;
-        double unit_y = dy / distance;
+        // Update MISS
+        // Raytrace (Bresenham)
 
-        // Step along the ray
-        for (double r = 0; r < distance; r += MAP_RESOLUTION) {
-            
-            // Calculate intermediate point
-            double check_x = robot_x + unit_x * r;
-            double check_y = robot_y + unit_y * r;
+        // convert map coordinates to grid indexes
+        int x0 = coord_to_map_row(r_x, _double_map.info);
+        int y0 = coord_to_map_col(r_y, _double_map.info);
+        int x1 = coord_to_map_row(point.x, _double_map.info);
+        int y1 = coord_to_map_col(point.y, _double_map.info);
 
-            int miss_index = world_to_map_index(check_x, check_y);
+        // Bresenham initialization
+        int dx = abs(x1 - x0);              // length of line in x
+        int dy = abs(y1 - y0);              // length of line in y
+        int sx = (x0 < x1) ? 1 : -1;        // step direction in x
+        int sy = (y0 < y1) ? 1 : -1;        // step direction in y
+        int err = dx - dy;                  // accumulated error
 
-            // Don't update if out of bounds or if we hit the wall itself
-            if (miss_index == -1 || miss_index == hit_index) {
-                break;
-            }
+        while (true)
+        {
+            // hit point reached
+            if (x0 == x1 && y0 == y1) break;
 
-            // Update free space
-            if (_double_map.data[miss_index] == -1) 
+            // bounds check current cell
+            if (x0 >= 0 && x0 < _double_map.info.width && y0 >= 0 && y0 < _double_map.info.height) 
             {
-                _double_map.data[miss_index] = P_MISS; // Init
+                int miss_idx = y0 * _double_map.info.width + x0;
+                if (_double_map.data[miss_idx] == -1)
+                {
+                    // unobserved grid point
+                    _double_map.data[miss_idx] = P_MISS;
+                }
+                else 
+                {
+                    _double_map.data[miss_idx] = clamp(inv_odds(odds(_double_map.data[miss_idx]) * odds(P_MISS)));
+                }
             }
-            _double_map.data[miss_index] = clamp(inv_odds(odds(_double_map.data[miss_index]) * odds(P_MISS)));
+
+            int e2 = 2 * err;
+            if (e2 > -dy) {
+                err -= dy;
+                x0 += sx;
+            }
+            if (e2 < dx) {
+                err += dx;
+                y0 += sy;
+            }
         }
     }
 }
 
-
-nav_msgs::OccupancyGrid LocalSlamNode::convert_double_map_to_occupancy_grid(){
+nav_msgs::OccupancyGrid LocalSlamNode::convert_double_map_to_occupancy_grid(const slam::DoubleOccupancyGrid& double_map)
+{
     nav_msgs::OccupancyGrid occupancy_grid;
-    occupancy_grid.header = _double_map.header;
-    occupancy_grid.info = _double_map.info;
-    occupancy_grid.data.resize(_double_map.data.size());
+    occupancy_grid.header = double_map.header;
+    occupancy_grid.info = double_map.info;
+    occupancy_grid.data.resize(double_map.data.size());
 
-    for (size_t i = 0; i < _double_map.data.size(); ++i){
-        if (_double_map.data[i] == -1){
+    for (size_t i = 0; i < double_map.data.size(); ++i){
+        if (double_map.data[i] == -1)
+        {
             occupancy_grid.data[i] = -1; // Unknown
         }
-        else{
-            occupancy_grid.data[i] = static_cast<int8_t>(_double_map.data[i] * 100); // Convert to [0, 100]
+        else
+        {
+            occupancy_grid.data[i] = static_cast<int8_t>(double_map.data[i] * 100); // Convert to [0, 100]
         }
     }
     return occupancy_grid;
+}
+
+// --- ros callbacks ---
+
+void LocalSlamNode::front_scan_callback(const sensor_msgs::LaserScan::ConstPtr& msg)
+{
+    set_laser_scan(*msg);
+}
+
+void LocalSlamNode::odom_filtered_callback(const nav_msgs::Odometry::ConstPtr& msg)
+{
+    set_odom_filtered(*msg);
+}
+
+// --- getters / setters ---
+
+sensor_msgs::LaserScan LocalSlamNode::get_laser_scan()
+{
+    std::lock_guard<std::mutex> lock(_input_mutex);
+    return _laser_scan;
+}
+
+void LocalSlamNode::set_laser_scan(const sensor_msgs::LaserScan& scan)
+{
+    std::lock_guard<std::mutex> lock(_input_mutex);
+    _laser_scan = scan;
+}
+
+nav_msgs::Odometry LocalSlamNode::get_odom_filtered()
+{
+    std::lock_guard<std::mutex> lock(_input_mutex);
+    return _odom_filtered;
+}
+
+void LocalSlamNode::set_odom_filtered(const nav_msgs::Odometry& odom)
+{
+    std::lock_guard<std::mutex> lock(_input_mutex);
+    _odom_filtered = odom;
+}
+
+tf2::Transform LocalSlamNode::get_tf_map_to_odom()
+{
+    std::lock_guard<std::mutex> lock(_tf_map_to_odom_mutex);
+    return _tf_map_to_odom;
+}
+
+void LocalSlamNode::set_tf_map_to_odom(const tf2::Transform& tf)
+{
+    std::lock_guard<std::mutex> lock(_tf_map_to_odom_mutex);
+    _tf_map_to_odom = tf;
+}
+
+slam::DoubleOccupancyGrid LocalSlamNode::get_double_map()
+{
+    std::lock_guard<std::mutex> lock(_double_map_mutex);
+    return _double_map;
 }
