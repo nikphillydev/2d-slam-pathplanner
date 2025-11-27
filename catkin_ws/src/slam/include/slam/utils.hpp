@@ -39,7 +39,7 @@ sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& 
     return cloud;
 }
 
-bool transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs::PointCloud& out_cloud, const geometry_msgs::TransformStamped& ts)
+void transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs::PointCloud& out_cloud, const geometry_msgs::TransformStamped& ts)
 {
     out_cloud.header = in_cloud.header;
     out_cloud.header.frame_id = ts.header.frame_id;
@@ -59,7 +59,6 @@ bool transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs:
         point32_transformed.z = 0;
         out_cloud.points.push_back(point32_transformed);
     }
-    return true;
 }
 
 geometry_msgs::TransformStamped create_transform_stamped_from_odom(const nav_msgs::Odometry& odom)

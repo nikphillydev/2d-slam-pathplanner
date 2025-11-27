@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
     ros-noetic-jackal-desktop \
     ros-noetic-jackal-simulator \
     ros-noetic-jackal-navigation \
+    ros-noetic-teleop-twist-keyboard \
     libgoogle-glog-dev \
     libgflags-dev \
     libatlas-base-dev \
