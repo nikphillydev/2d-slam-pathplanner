@@ -43,7 +43,7 @@ void LocalSlamNode::slam_thread()
 {
     bool is_first_iteration = true;
     
-    ros::Rate loop_rate(1000);
+    ros::Rate loop_rate(50);
     
     while(ros::ok())
     {
@@ -66,7 +66,7 @@ void LocalSlamNode::slam_thread()
 
         // Extract point cloud from laser scan
         sensor_msgs::PointCloud cloud_laser = laser_scan_to_point_cloud(laser_scan, 0);
-        sensor_msgs::PointCloud cloud_base_link;
+        sensor_msgs::PointCloud cloud_base_link_slam;
         geometry_msgs::TransformStamped transform_laser_to_base_link;
         try{
             transform_laser_to_base_link = _tf_buffer.lookupTransform("base_link", cloud_laser.header.frame_id, ros::Time(0));
@@ -76,11 +76,7 @@ void LocalSlamNode::slam_thread()
             loop_rate.sleep();
             continue;
         }
-        if (!transform_point_cloud(cloud_laser, cloud_base_link, transform_laser_to_base_link)) {
-            loop_rate.sleep();
-            continue;
-        }
-
+        transform_point_cloud(cloud_laser, cloud_base_link_slam, transform_laser_to_base_link);
 
         if (is_first_iteration)
         {
@@ -106,16 +102,15 @@ void LocalSlamNode::slam_thread()
 
             // C
             // Ceres Solver Update
-            _odom_slam_tf = run_ceres_solver(cloud_base_link, _odom_slam_tf, _double_map);
+            _odom_slam_tf = run_ceres_solver(cloud_base_link_slam, _odom_slam_tf, _double_map);
             _odom_slam = create_odom_from_transform(_odom_slam_tf, "odom", "base_link_slam");
         }
 
         // D
 
         geometry_msgs::TransformStamped transform_base_link_slam_to_odom = create_transform_stamped_from_transform(_odom_slam_tf, "odom", "base_link_slam");
-
         sensor_msgs::PointCloud cloud_odom;
-        if (!transform_point_cloud(cloud_base_link, cloud_odom, transform_base_link_slam_to_odom)) return;
+        transform_point_cloud(cloud_base_link_slam, cloud_odom, transform_base_link_slam_to_odom);
 
         // E
 
@@ -194,7 +189,7 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
     
     // We only use valid ranges
     // Step size can be increased (e.g., i+=2 or i+=4) for performance
-    for (size_t i = 0; i < cloud_base.points.size(); i += 2) {
+    for (size_t i = 0; i < cloud_base.points.size(); i += 1) {
         double p_x = cloud_base.points[i].x;
         double p_y = cloud_base.points[i].y;
 
@@ -231,7 +226,7 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
     // 3. Configure Solver
     ceres::Solver::Options options;
     options.linear_solver_type = ceres::DENSE_QR;
-    options.max_num_iterations = 20; // Keep it fast for real-time
+    options.max_num_iterations = 50; // Keep it fast for real-time
     options.minimizer_progress_to_stdout = false;
 
     // 4. Solve
@@ -311,8 +306,8 @@ int LocalSlamNode::world_to_map_index(double x, double y)
 void LocalSlamNode::update_map(const sensor_msgs::PointCloud& cloud)
 {
     // Probability Constants
-    const double P_HIT = 0.55;
-    const double P_MISS = 0.45;
+    const double P_HIT = 0.8;
+    const double P_MISS = 0.2;
 
     if (_double_map.data.empty()){
         init_map();

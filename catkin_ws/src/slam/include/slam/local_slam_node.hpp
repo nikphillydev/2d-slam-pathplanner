@@ -94,13 +94,9 @@ private:
     slam::DoubleOccupancyGrid _double_map;      // double precision map for internal use
 
     // map parameters
-    const double MAP_RESOLUTION = 0.05; // meters per cell
+    const double MAP_RESOLUTION = 0.005; // meters per cell
     const int MAP_WIDTH = 5000;          // cells
     const int MAP_HEIGHT = 5000;         // cells
-
-
-
-
 };
 
 
