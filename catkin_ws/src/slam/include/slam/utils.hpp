@@ -21,7 +21,7 @@ sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& 
     for (int i = 0; i < scan.ranges.size(); i++)
     {
         float range = scan.ranges[i];
-        if (!std::isfinite(range) || range < scan.range_min || range > scan.range_max)
+        if (std::isnan(range) || !std::isfinite(range) || range < scan.range_min || range > scan.range_max)
         {
             continue;
         }

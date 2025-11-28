@@ -14,6 +14,8 @@ RUN apt-get update && apt-get install -y \
     libeigen3-dev \
     libsuitesparse-dev \
     libceres-dev \
+    iputils-ping \
+    iproute2 \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 

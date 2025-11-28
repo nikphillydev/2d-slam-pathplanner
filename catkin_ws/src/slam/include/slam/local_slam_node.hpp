@@ -114,9 +114,9 @@ private:
     nav_msgs::OccupancyGrid _map;               // visualization map
 
     // map parameters
-    const double MAP_RESOLUTION = 0.01;         // meters per cell
-    const int MAP_WIDTH = 30;                   // meters
-    const int MAP_HEIGHT = 30;                  // meters
+    const double MAP_RESOLUTION = 0.005;        // meters per cell
+    const int MAP_WIDTH = 50;                   // meters
+    const int MAP_HEIGHT = 50;                  // meters
     const int MAP_CELL_WIDTH = MAP_WIDTH / MAP_RESOLUTION;
     const int MAP_CELL_HEIGHT = MAP_HEIGHT / MAP_RESOLUTION;
 };

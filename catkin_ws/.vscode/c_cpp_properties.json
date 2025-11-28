@@ -6,6 +6,7 @@
                 "${workspaceFolder}/**",
                 "/opt/ros/noetic/include",
                 "${workspaceFolder}/src/slam/include",
+                "${workspaceFolder}/src/planning/include",
                 "/usr/include"
             ],
             "defines": [],
