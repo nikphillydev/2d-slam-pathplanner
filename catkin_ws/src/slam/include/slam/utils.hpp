@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cmath>
 
 #include "ros/ros.h"
@@ -19,7 +21,7 @@ sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& 
     for (int i = 0; i < scan.ranges.size(); i++)
     {
         float range = scan.ranges[i];
-        if (!std::isfinite(range) || range < scan.range_min || range > scan.range_max)
+        if (std::isnan(range) || !std::isfinite(range) || range < scan.range_min || range > scan.range_max)
         {
             continue;
         }
@@ -37,7 +39,7 @@ sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& 
     return cloud;
 }
 
-bool transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs::PointCloud& out_cloud, const geometry_msgs::TransformStamped& ts)
+void transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs::PointCloud& out_cloud, const geometry_msgs::TransformStamped& ts)
 {
     out_cloud.header = in_cloud.header;
     out_cloud.header.frame_id = ts.header.frame_id;
@@ -57,7 +59,6 @@ bool transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs:
         point32_transformed.z = 0;
         out_cloud.points.push_back(point32_transformed);
     }
-    return true;
 }
 
 geometry_msgs::TransformStamped create_transform_stamped_from_odom(const nav_msgs::Odometry& odom)
@@ -137,20 +138,28 @@ geometry_msgs::TransformStamped invert_transform(const geometry_msgs::TransformS
     return ts_inv;
 }
 
-double odds(double p){
+double odds(double p)
+{
     return p / (1.0 - p);
 }
-double inv_odds(double o){
-    return (o) / (1.0 + o);
+
+double inv_odds(double p)
+{
+    return p / (1.0 + p);
 }
+
 double clamp(double val)
 {  
-    // clamp value between 0.001 and 0.9
-    if (val < 0.001) {
+    if (val < 0.001) 
+    {
         return 0.001;
-    } else if (val > 0.9){
-        return 0.9;
-    } else {
+    } 
+    else if (val > 0.999)
+    {
+        return 0.999;
+    } 
+    else 
+    {
         return val;
     }
 }
