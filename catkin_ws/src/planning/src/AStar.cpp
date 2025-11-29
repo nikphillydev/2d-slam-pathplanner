@@ -1,6 +1,5 @@
 #include "planning/Astar.hpp"
 #include <algorithm>
-#include <unordered_set>
 
 AStar::AStar(){}
 AStar::~AStar(){}
