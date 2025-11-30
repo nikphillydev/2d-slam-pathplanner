@@ -83,16 +83,6 @@ struct PointToMapResidual {
             T probability = GetBiCubicBSpline(map_x_idx, map_y_idx);
             residual[0] = T(1.0) - probability; 
         }
-        // 3. Interpolate (High Performance B-Spline)
-        T probability = GetBiCubicBSpline(map_x, map_y);
-        if  (GetScalar(probability) < 0.0) {
-            probability = T(0.5);
-        }
-
-        // 4. Residual
-        // We want probability -> 1.0. 
-        residual[0] = T(1.0) - probability; 
-
         return true;
     }
 
