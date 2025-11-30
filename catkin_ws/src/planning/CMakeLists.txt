@@ -23,7 +23,7 @@ include_directories(
 )
 
 ## Declare a C++ executable
-add_executable(planning_node src/main.cpp src/planning_node.cpp src/AStar.cpp)
+add_executable(planning_node src/main.cpp src/planning_node.cpp src/AStar.cpp src/pure_pursuit.cpp)
 
 ## Specify libraries to link executable target against
 target_link_libraries(planning_node

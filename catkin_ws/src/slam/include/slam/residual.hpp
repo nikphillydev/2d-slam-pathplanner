@@ -74,7 +74,7 @@ struct PointToMapResidual {
                 dist_y = map_y_idx - (map_width - T(2));    // positive number
             
             // create residual from high cost constant and distances to map edges
-            // distance components ensure their is a gradient pointing back to the map
+            // distance components ensure there is a gradient pointing back to the map
             residual[0] = T(1.0) + dist_x + dist_y;
         }
         else

@@ -11,6 +11,7 @@
 #include "geometry_msgs/TransformStamped.h"
 
 #include "planning/AStar.hpp"
+#include "planning/pure_pursuit.hpp"
 
 #include <thread>
 #include <mutex>
@@ -25,6 +26,7 @@ public:
 
     void planning_thread();
     void emergency_stop_thread();
+    void controller_thread();
 
     // --- ros callbacks ---
 
@@ -52,12 +54,14 @@ private:
     ros::Subscriber _map_slam_sub;
     ros::Subscriber _goal_sub;
     ros::Subscriber _laser_scan_sub;
+  
     ros::Publisher _path_pub;
     ros::Publisher _estop_pub;
-
+    ros::Publisher _cmd_vel_pub;
 
     // --- data ---
-
+    
+    std::mutex _input_mutex;
     nav_msgs::OccupancyGrid _map;
     geometry_msgs::Point _current_goal;
     sensor_msgs::LaserScan _laser_scan;
@@ -69,13 +73,16 @@ private:
 
     std::thread _planning_thread_handle;
     std::thread _emergency_stop_thread_handle;
-    std::mutex _input_mutex;
-    std::mutex _goal_mutex;
+    std::thread _controller_thread_handle;
 
     // --- helpers ---
+  
     void publish_path(const std::vector<geometry_msgs::Point>& points);
 
     // --- planner ---
+  
     AStar _planner;
 
+    std::mutex _controller_mutex;
+    PurePursuitController _controller;
 };
