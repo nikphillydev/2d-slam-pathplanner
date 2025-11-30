@@ -59,8 +59,8 @@ void PathPlanningNode::planning_thread()
         }
       
         geometry_msgs::Point start_point;
-        geometry_msgs::TransformStamped tf_map_to_base_link
-        try{
+        geometry_msgs::TransformStamped tf_map_to_base_link;
+        try {
             tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
             start_point.x = tf_map_to_base_link.transform.translation.x;
             start_point.y = tf_map_to_base_link.transform.translation.y;
@@ -89,7 +89,9 @@ void PathPlanningNode::planning_thread()
                 _controller.initialize_path(path_points, tf_map_to_base_link.transform);
             }
             publish_path(path_points);
-        } else {
+        } 
+        else 
+        {
             ROS_WARN_THROTTLE(2, "A* Failed to find a path!");
         }
 
@@ -100,14 +102,18 @@ void PathPlanningNode::planning_thread()
 void PathPlanningNode::emergency_stop_thread()
 {
     ros::Rate loop_rate(10);
-    while (ros::ok()) {
+    while (ros::ok())
+    {
         sensor_msgs::LaserScan scan = get_laser_scan();
         float mindis = *std::min_element(scan.ranges.begin(), scan.ranges.end());
-        if (mindis < EMERGENCY_STOP_DIS){
+        if (mindis < EMERGENCY_STOP_DIS)
+        {
             std_msgs::Bool estop_msg;
             estop_msg.data = true;
-        _estop_pub.publish(estop_msg);
-        else{
+            _estop_pub.publish(estop_msg);
+        }
+        else
+        {
             std_msgs::Bool estop_msg;
             estop_msg.data = false;
             _estop_pub.publish(estop_msg);
@@ -122,7 +128,7 @@ void PathPlanningNode::controller_thread()
     while(ros::ok())
     {
         geometry_msgs::TransformStamped tf_map_to_base_link;
-        try{
+        try {
             tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
         }
         catch (tf2::TransformException &ex) {
@@ -146,7 +152,8 @@ void PathPlanningNode::controller_thread()
 
 void PathPlanningNode::map_slam_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    if (msg->data.empty()) {
+    if (msg->data.empty()) 
+    {
         ROS_WARN("Received empty map, ignoring.");
         return;
     }
@@ -173,7 +180,8 @@ void PathPlanningNode::publish_path(const std::vector<geometry_msgs::Point>& poi
     path_msg.header.stamp = ros::Time::now();
     path_msg.header.frame_id = "map";
 
-    for (const auto& point : points) {
+    for (const auto& point : points) 
+    {
         geometry_msgs::PoseStamped pose;
         pose.header = path_msg.header;
         pose.pose.position = point;
@@ -199,7 +207,8 @@ void PathPlanningNode::set_map(const nav_msgs::OccupancyGrid& map)
     std::lock_guard<std::mutex> lock(_input_mutex);
 
     _map = map;
-    for (auto& cell : _map.data) {
+    for (auto& cell : _map.data) 
+    {
         if (cell == -1) {
             cell = 0;
         }
