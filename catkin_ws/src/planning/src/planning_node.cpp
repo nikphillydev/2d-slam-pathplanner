@@ -9,12 +9,17 @@ PathPlanningNode::PathPlanningNode()
     // goal subscriber
     _goal_sub = _nh.subscribe<geometry_msgs::PoseStamped>("/goal", 1, &PathPlanningNode::goal_callback, this);
 
+    // laser scan subscriber
+    _laser_scan_sub = _nh.subscribe<sensor_msgs::LaserScan>("/front/scan", 1, &PathPlanningNode::laser_scan_callback, this);
+
     // create publishers
     _path_pub = _nh.advertise<nav_msgs::Path>("/planned_path", 1);
+    _estop_pub = _nh.advertise<std_msgs::Bool>("/emergency_stop", 1);
 
 
     // start worker threads
     _planning_thread_handle = std::thread(&PathPlanningNode::planning_thread, this);
+    _emergency_stop_thread_handle = std::thread(&PathPlanningNode::emergency_stop_thread, this);
 
     ROS_INFO("PathPlanningNode has started. Waiting for map and goal...");
 }
@@ -81,6 +86,24 @@ void PathPlanningNode::planning_thread()
     }
 }
 
+void PathPlanningNode::emergency_stop_thread(){
+    ros::Rate loop_rate(10);
+    while (ros::ok()) {
+        sensor_msgs::LaserScan scan = get_laser_scan();
+        float mindis = *std::min_element(scan.ranges.begin(), scan.ranges.end());
+        if (mindis < EMERGENCY_STOP_DIS){
+            std_msgs::Bool estop_msg;
+            estop_msg.data = true;
+        _estop_pub.publish(estop_msg);
+        else{
+            std_msgs::Bool estop_msg;
+            estop_msg.data = false;
+            _estop_pub.publish(estop_msg);
+        }
+        loop_rate.sleep();
+    }
+}
+
 // --- ros callbacks ---
 
 void PathPlanningNode::map_slam_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
@@ -99,6 +122,10 @@ void PathPlanningNode::goal_callback(const geometry_msgs::PoseStamped::ConstPtr&
     set_goal(msg->pose.position);
 }
 
+void PathPlanningNode::laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr & msg)
+{
+    set_laser_scan(*msg);
+}
 
 // --- helpers ---
 void PathPlanningNode::publish_path(const std::vector<geometry_msgs::Point>& points)
@@ -142,13 +169,25 @@ void PathPlanningNode::set_map(const nav_msgs::OccupancyGrid& map)
 
 geometry_msgs::Point PathPlanningNode::get_goal()
 {
-    std::lock_guard<std::mutex> lock(_goal_mutex);
+    std::lock_guard<std::mutex> lock(_input_mutex);
     return _current_goal;
 }
 
 void PathPlanningNode::set_goal(const geometry_msgs::Point& goal)
 {
-    std::lock_guard<std::mutex> lock(_goal_mutex);
+    std::lock_guard<std::mutex> lock(_input_mutex);
     _current_goal = goal;
     _has_goal = true;
+}
+
+sensor_msgs::LaserScan PathPlanningNode::get_laser_scan()
+{
+    std::lock_guard<std::mutex> lock(_input_mutex);
+    return _laser_scan;
+}
+
+void PathPlanningNode::set_laser_scan(const sensor_msgs::LaserScan& scan)
+{
+    std::lock_guard<std::mutex> lock(_input_mutex);
+    _laser_scan = scan;
 }
