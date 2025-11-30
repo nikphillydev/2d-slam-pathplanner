@@ -1,150 +1,139 @@
 #pragma once
 
-#include <vector>
-#include <cmath>
+#include "ros/ros.h"
+#include "slam/DoubleOccupancyGrid.h"
+#include "geometry_msgs/Point32.h"
+
 #include <ceres/ceres.h>
 #include <ceres/jet.h>
+#include <vector>
+#include <cmath>
 
-// --- Helper: Extract scalar value from T (double or Jet) ---
+// --- Helpers ---
+
+// Extract scalar value from T (double or Jet)
 template <typename T>
 inline double GetScalar(const T& x) { return x; }
 
 template <typename T, int N>
 inline double GetScalar(const ceres::Jet<T, N>& x) { return x.a; }
 
-// -----------------------------------------------------------
+// --- Residuals ---
 
 struct PointToMapResidual {
-    PointToMapResidual(double x, double y, 
-                       const std::vector<double>& map_data, 
-                       int width, int height, double resolution,
-                       double origin_x, double origin_y)
-        : point_x_(x), point_y_(y), 
-          map_data_(map_data), 
-          width_(width), height_(height), resolution_(resolution),
-          origin_x_(origin_x), origin_y_(origin_y) {}
+    PointToMapResidual(const geometry_msgs::Point32& point, const slam::DoubleOccupancyGrid& map)
+        : _point(point), _map(map) {}
 
     template <typename T>
-    bool operator()(const T* const pose, T* residual) const {
-        // 1. Transform Point
-        T theta = pose[2];
-        T cos_th = ceres::cos(theta);
-        T sin_th = ceres::sin(theta);
+    bool operator()(const T* const map_to_base, T* residual) const {
+        // transformation map -> base_link
+        T tf_x = map_to_base[0];
+        T tf_y = map_to_base[1];
+        T tf_theta = map_to_base[2];
 
-        T trans_x = cos_th * T(point_x_) - sin_th * T(point_y_) + pose[0];
-        T trans_y = sin_th * T(point_x_) + cos_th * T(point_y_) + pose[1];
+        // point in base_link frame
+        T p_x = static_cast<T>(_point.x);
+        T p_y = static_cast<T>(_point.y);
 
-        // 2. Map Coordinates
-        T map_x = (trans_x - T(origin_x_)) / T(resolution_);
-        T map_y = (trans_y - T(origin_y_)) / T(resolution_);
+        // map parameters
+        T map_origin_x = static_cast<T>(_map.info.origin.position.x);
+        T map_origin_y = static_cast<T>(_map.info.origin.position.y);
+        T map_resolution = static_cast<T>(_map.info.resolution);
+        T map_width = static_cast<T>(_map.info.width);
+        T map_height = static_cast<T>(_map.info.height);
 
-        // 3. Interpolate (High Performance B-Spline)
-        T probability = GetBiCubicBSpline(map_x, map_y);
+        // transform point in base_link frame into map frame
+        T map_x = ceres::cos(tf_theta) * p_x - ceres::sin(tf_theta) * p_y + tf_x;
+        T map_y = ceres::sin(tf_theta) * p_x + ceres::cos(tf_theta) * p_y + tf_y;
 
-        // 4. Residual
-        // We want probability -> 1.0. 
-        residual[0] = T(1.0) - probability; 
+        // convert map coordinates to grid indices
+        T map_x_idx = (map_x - map_origin_x) / map_resolution;
+        T map_y_idx = (map_y - map_origin_y) / map_resolution;
 
+        // boundary check (bicubic spline interpolation requires 2 neighbours)
+        if (map_x_idx < T(2.0) || map_x_idx >= map_width - T(2) || 
+            map_y_idx < T(2.0) || map_y_idx >= map_height - T(2)) 
+        {
+            // OUTSIDE of map
+            // points outside of the map return a high residual
+            // proportional to their distance from the map edge,
+            // this results in pushing the optimizer back into the map
+
+            // calculate distances to valid edges
+
+            T dist_x = T(0.0);
+            if (map_x_idx < T(2.0)) 
+                dist_x = T(2.0) - map_x_idx;                // positive number
+            else if (map_x_idx >= map_width - T(2))
+                dist_x = map_x_idx - (map_width - T(2));    // positive number
+
+            T dist_y = T(0.0);
+            if (map_y_idx < T(2.0)) 
+                dist_y = T(2.0) - map_y_idx;                // positive number
+            else if (map_y_idx >= map_width - T(2))
+                dist_y = map_y_idx - (map_width - T(2));    // positive number
+            
+            // create residual from high cost constant and distances to map edges
+            // distance components ensure their is a gradient pointing back to the map
+            residual[0] = T(1.0) + dist_x + dist_y;
+        }
+        else
+        {
+            // INSIDE of map
+            T probability = GetBiCubicBSpline(map_x_idx, map_y_idx);
+            residual[0] = T(1.0) - probability; 
+        }
         return true;
     }
 
-    // --- Optimized Cubic B-Spline Interpolation ---
-    // Smoother than Catmull-Rom (reduces drift) and vectorized memory access (faster).
+    // --- High Performance Cubic B-Spline Interpolation ---
     template <typename T>
     T GetBiCubicBSpline(const T& x, const T& y) const {
-        // 1. Floor to find the relevant 4x4 grid patch
-        // B-Splines are centered at integer + 0.5, but for standard grids, 
-        // we usually look at the index to the left.
+        const int w = _map.info.width;
+        const int h = _map.info.height;
         int ix = static_cast<int>(std::floor(GetScalar(x)));
         int iy = static_cast<int>(std::floor(GetScalar(y)));
 
-        // 2. Fast Bounds Check (Check the whole 4x4 block at once)
-        // We need (ix-1) to (ix+2)
-        if (ix < 1 || ix >= width_ - 2 || iy < 1 || iy >= height_ - 2) {
-            // Fallback: simple boundary check or return 0
-            // Returning 0.0 with 0 gradient is safer than crashing
-            return T(0.0);
-        }
+        // safe check for the raw array access
+        if (ix < 1 || ix >= w - 2 || iy < 1 || iy >= h - 2) return T(0.0);
 
-        // 3. Compute Weights (Uniform Cubic B-Spline Basis)
-        // t is the fractional part relative to the center of the interval
         T fx = x - T(ix);
         T fy = y - T(iy);
 
-        // Precompute powers for X
-        T fx2 = fx * fx;
-        T fx3 = fx2 * fx;
-        
-        // B-Spline weights for X (1/6 factor included at the end)
-        // These are hardcoded basis functions for efficiency
-        T wx0 = (T(1.0) - fx) * (T(1.0) - fx) * (T(1.0) - fx);      // (1-t)^3
-        T wx1 = (T(3.0) * fx3) - (T(6.0) * fx2) + T(4.0);           // 3t^3 - 6t^2 + 4
-        T wx2 = (T(-3.0) * fx3) + (T(3.0) * fx2) + (T(3.0) * fx) + T(1.0); // -3t^3 + 3t^2 + 3t + 1
-        T wx3 = fx3;                                                // t^3
+        // precompute powers
+        T fx2 = fx * fx; T fx3 = fx2 * fx;
+        T fy2 = fy * fy; T fy3 = fy2 * fy;
 
-        // Precompute powers for Y
-        T fy2 = fy * fy;
-        T fy3 = fy2 * fy;
-        
-        // B-Spline weights for Y
-        T wy0 = (T(1.0) - fy) * (T(1.0) - fy) * (T(1.0) - fy);
-        T wy1 = (T(3.0) * fy3) - (T(6.0) * fy2) + T(4.0);
-        T wy2 = (T(-3.0) * fy3) + (T(3.0) * fy2) + (T(3.0) * fy) + T(1.0);
+        // basis functions (weights)
+        T wx0 = (T(1.0)-fx)*(T(1.0)-fx)*(T(1.0)-fx);
+        T wx1 = T(3.0)*fx3 - T(6.0)*fx2 + T(4.0);
+        T wx2 = T(-3.0)*fx3 + T(3.0)*fx2 + T(3.0)*fx + T(1.0);
+        T wx3 = fx3;
+
+        T wy0 = (T(1.0)-fy)*(T(1.0)-fy)*(T(1.0)-fy);
+        T wy1 = T(3.0)*fy3 - T(6.0)*fy2 + T(4.0);
+        T wy2 = T(-3.0)*fy3 + T(3.0)*fy2 + T(3.0)*fy + T(1.0);
         T wy3 = fy3;
 
-        // 4. Fast Memory Access
-        // Get pointer to the top-left corner of the 4x4 patch: (ix-1, iy-1)
-        const double* ptr = &map_data_[(iy - 1) * width_ + (ix - 1)];
+        // pointer to the top-left corner of the 4x4 patch (x-1, y-1)
+        const double* ptr = &_map.data[(iy - 1) * w + (ix - 1)];
 
-        // 5. Convolve (Matrix multiplication unrolled)
-        // Row 0 (y-1)
-        T row0 = (T(ptr[0]) * wx0 + T(ptr[1]) * wx1 + T(ptr[2]) * wx2 + T(ptr[3]) * wx3);
-        ptr += width_; // Move down one row
-        
-        // Row 1 (y)
-        T row1 = (T(ptr[0]) * wx0 + T(ptr[1]) * wx1 + T(ptr[2]) * wx2 + T(ptr[3]) * wx3);
-        ptr += width_;
+        // lamba to parse unknown (-1) cells into 0.5 (neutral) probability
+        auto val = [&](int idx) -> double {
+            double v = ptr[idx];
+            return (v < 0.0) ? 0.5 : v;
+        };
 
-        // Row 2 (y+1)
-        T row2 = (T(ptr[0]) * wx0 + T(ptr[1]) * wx1 + T(ptr[2]) * wx2 + T(ptr[3]) * wx3);
-        ptr += width_;
+        // convolve rows
+        T row0 = T(val(0))*wx0 + T(val(1))*wx1 + T(val(2))*wx2 + T(val(3))*wx3; 
+        T row1 = T(val(w))*wx0 + T(val(w+1))*wx1 + T(val(w+2))*wx2 + T(val(w+3))*wx3; 
+        T row2 = T(val(2*w))*wx0 + T(val(2*w+1))*wx1 + T(val(2*w+2))*wx2 + T(val(2*w+3))*wx3; 
+        T row3 = T(val(3*w))*wx0 + T(val(3*w+1))*wx1 + T(val(3*w+2))*wx2 + T(val(3*w+3))*wx3;
 
-        // Row 3 (y+2)
-        T row3 = (T(ptr[0]) * wx0 + T(ptr[1]) * wx1 + T(ptr[2]) * wx2 + T(ptr[3]) * wx3);
-
-        // Interpolate columns
-        T val = (row0 * wy0 + row1 * wy1 + row2 * wy2 + row3 * wy3);
-
-        // 6. Normalize (1/36 total because 1/6 for x and 1/6 for y)
-        return val * T(1.0 / 36.0);
+        // interpolate and normalize
+        return (row0*wy0 + row1*wy1 + row2*wy2 + row3*wy3) * T(1.0/36.0);
     }
 
-    const double point_x_;
-    const double point_y_;
-    const std::vector<double>& map_data_; 
-    const int width_;
-    const int height_;
-    const double resolution_;
-    const double origin_x_;
-    const double origin_y_;
-};
-
-struct PosePriorResidual {
-    PosePriorResidual(double x_head, double y_head, double theta_head, double alpha_pos, double alpha_rot)
-        : _x_head(x_head), _y_head(y_head), _theta_head(theta_head), 
-          _sqrt_alpha_pos(std::sqrt(alpha_pos)), 
-          _sqrt_alpha_rot(std::sqrt(alpha_rot)) {}
-
-    template <typename T>
-    bool operator()(const T* const pose, T* residuals) const {
-        residuals[0] = T(_sqrt_alpha_pos) * (pose[0] - T(_x_head));
-        residuals[1] = T(_sqrt_alpha_pos) * (pose[1] - T(_y_head));
-        
-        // Note: For full robustness, normalize angle diff to [-pi, pi]
-        residuals[2] = T(_sqrt_alpha_rot) * (pose[2] - T(_theta_head));
-        return true;
-    }
-
-    const double _x_head, _y_head, _theta_head;
-    const double _sqrt_alpha_pos, _sqrt_alpha_rot;
+    const geometry_msgs::Point32& _point;
+    const slam::DoubleOccupancyGrid& _map;
 };

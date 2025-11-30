@@ -56,7 +56,7 @@ void transform_point_cloud(const sensor_msgs::PointCloud& in_cloud, sensor_msgs:
         geometry_msgs::Point32 point32_transformed;
         point32_transformed.x = static_cast<float>(point_tf2_out.x);
         point32_transformed.y = static_cast<float>(point_tf2_out.y);
-        point32_transformed.z = 0;
+        point32_transformed.z = static_cast<float>(point_tf2_out.z);
         out_cloud.points.push_back(point32_transformed);
     }
 }
@@ -93,28 +93,6 @@ tf2::Transform create_transform_from_odom(const nav_msgs::Odometry& odom)
     return tf;
 }
 
-nav_msgs::Odometry create_odom_from_transform(const tf2::Transform& tf, const std::string& frame_id, const std::string& child_frame_id)
-{
-    nav_msgs::Odometry odom_msg;
-
-    odom_msg.header.stamp = ros::Time::now();
-    odom_msg.header.frame_id = frame_id;
-    odom_msg.child_frame_id = child_frame_id;
-
-    tf2::Vector3 translation = tf.getOrigin();
-    odom_msg.pose.pose.position.x = translation.x();
-    odom_msg.pose.pose.position.y = translation.y();
-    odom_msg.pose.pose.position.z = translation.z();
-
-    tf2::Quaternion rotation = tf.getRotation();
-    odom_msg.pose.pose.orientation.x = rotation.x();
-    odom_msg.pose.pose.orientation.y = rotation.y();
-    odom_msg.pose.pose.orientation.z = rotation.z();
-    odom_msg.pose.pose.orientation.w = rotation.w();
-
-    return odom_msg;
-}
-
 geometry_msgs::TransformStamped create_transform_stamped_from_transform(const tf2::Transform& tf, const std::string& frame_id, const std::string& child_frame_id)
 {
     geometry_msgs::TransformStamped transform_stamped;
@@ -123,19 +101,6 @@ geometry_msgs::TransformStamped create_transform_stamped_from_transform(const tf
     transform_stamped.child_frame_id = child_frame_id;
     transform_stamped.transform = tf2::toMsg(tf);
     return transform_stamped;
-}
-
-geometry_msgs::TransformStamped invert_transform(const geometry_msgs::TransformStamped& ts)
-{
-    tf2::Transform transform;
-    tf2::fromMsg(ts.transform, transform);
-    tf2::Transform transform_inv = transform.inverse();
-    geometry_msgs::TransformStamped ts_inv;
-    ts_inv.header = ts.header;
-    ts_inv.child_frame_id = ts.header.frame_id;
-    ts_inv.header.frame_id = ts.child_frame_id;
-    ts_inv.transform = tf2::toMsg(transform_inv);
-    return ts_inv;
 }
 
 double odds(double p)
