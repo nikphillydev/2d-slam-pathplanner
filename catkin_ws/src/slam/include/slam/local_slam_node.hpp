@@ -44,8 +44,7 @@ public:
     
     tf2::Transform run_ceres_solver(
         const sensor_msgs::PointCloud& cloud_base, 
-        const tf2::Transform& initial_guess, 
-        const slam::DoubleOccupancyGrid& map);
+        const tf2::Transform& tf_map_to_base_guess);
 
     // --- map utility ---
     
@@ -56,8 +55,8 @@ public:
     int coord_to_map_col(double y, const nav_msgs::MapMetaData& info);
 
     void update_map(const geometry_msgs::Pose& scan_origin, const sensor_msgs::PointCloud& cloud);
-
-    nav_msgs::OccupancyGrid convert_double_map_to_occupancy_grid(const slam::DoubleOccupancyGrid& double_map);
+    
+    void publish_map();
     
     // --- ros callbacks ---
 
@@ -74,8 +73,6 @@ public:
 
     tf2::Transform get_tf_map_to_odom();
     void set_tf_map_to_odom(const tf2::Transform& tf);
-
-    slam::DoubleOccupancyGrid get_double_map();
 
 private:
     // --- ros ---
@@ -111,12 +108,18 @@ private:
     std::mutex _double_map_mutex;
     slam::DoubleOccupancyGrid _double_map;      // double precision probability map for internal use
 
-    nav_msgs::OccupancyGrid _map;               // visualization map
+    nav_msgs::OccupancyGrid _map;               // cached map for publishing
 
-    // map parameters
-    const double MAP_RESOLUTION = 0.005;        // meters per cell
+    // slam parameters
+    const double MAP_RESOLUTION = 0.007;        // meters per cell
     const int MAP_WIDTH = 50;                   // meters
     const int MAP_HEIGHT = 50;                  // meters
     const int MAP_CELL_WIDTH = MAP_WIDTH / MAP_RESOLUTION;
     const int MAP_CELL_HEIGHT = MAP_HEIGHT / MAP_RESOLUTION;
+    const double P_HIT = 0.9;
+    const double P_MISS = 0.1;
+    const double CERES_MAX_ITERATIONS = 50;
+    const int CERES_POINT_STEP_SIZE = 2;        // increase for performance
+    const int TF_PUBLISHER_RATE_HZ = 50;
+    const int SLAM_THREAD_LOOP_HZ = 20;
 };
