@@ -43,26 +43,3 @@ private:
     const double X_SOLN_TOLERANCE = 0.0001;         // m
     const double Y_SOLN_TOLERANCE = 0.0001;         // m
 };
-
-// # Params
-// self.look_ahead_distance = 30       # mm
-// self.Kp_linear = 1.0
-// self.Kp_turn = 1.2
-// self.final_goal_tolerance = 10       # mm
-// self.max_linear_speed = 33          # mm / s
-// self.max_angular_speed = 60        # deg / s 
-// self.x_solution_tolerance = 0.1     # mm
-// self.y_solution_tolerance = 0.1     # mm
-// self.update_rate = 200              # Hz
-
-// self.debug = True
-
-// # Estimator
-// self.estimator = estimator
-// # Motor driver
-// self.driver = driver
-
-// # Internal workings ...
-// self.path = None
-// self.last_found_index = 0
-// self.approaching_final_position = False
