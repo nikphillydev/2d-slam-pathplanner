@@ -7,14 +7,15 @@ PathPlanningNode::PathPlanningNode()
     _map_slam_sub = _nh.subscribe<nav_msgs::OccupancyGrid>("/map/slam", 1000, &PathPlanningNode::map_slam_callback, this);
 
     // goal subscriber
-    _goal_sub = _nh.subscribe<geometry_msgs::PoseStamped>("/goal", 1, &PathPlanningNode::goal_callback, this);
+    _goal_sub = _nh.subscribe<geometry_msgs::PoseStamped>("/goal", 1000, &PathPlanningNode::goal_callback, this);
 
     // create publishers
-    _path_pub = _nh.advertise<nav_msgs::Path>("/planned_path", 1);
-
+    _path_pub = _nh.advertise<nav_msgs::Path>("/planned_path", 1000);
+    _cmd_vel_pub = _nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
     // start worker threads
     _planning_thread_handle = std::thread(&PathPlanningNode::planning_thread, this);
+    _controller_thread_handle = std::thread(&PathPlanningNode::controller_thread, this);
 
     ROS_INFO("PathPlanningNode has started. Waiting for map and goal...");
 }
@@ -23,6 +24,8 @@ PathPlanningNode::~PathPlanningNode()
 {
     if (_planning_thread_handle.joinable())
         _planning_thread_handle.join();
+    if (_controller_thread_handle.joinable())
+        _controller_thread_handle.join();
 
     ROS_INFO("PathPlanningNode has stopped");
 }
@@ -36,6 +39,7 @@ void PathPlanningNode::planning_thread()
     while(ros::ok())
     {
         ROS_INFO("path planning running");
+
         nav_msgs::OccupancyGrid map = get_map();
         if (map.data.empty())
         {
@@ -43,15 +47,18 @@ void PathPlanningNode::planning_thread()
             loop_rate.sleep();
             continue;
         }
+
         if (!_has_goal)
         {
             ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
             loop_rate.sleep();
             continue;
         }
+
         geometry_msgs::Point start_point;
+        geometry_msgs::TransformStamped tf_map_to_base_link;
         try{
-            geometry_msgs::TransformStamped tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
+            tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
             start_point.x = tf_map_to_base_link.transform.translation.x;
             start_point.y = tf_map_to_base_link.transform.translation.y;
             start_point.z = 0.0;
@@ -63,20 +70,55 @@ void PathPlanningNode::planning_thread()
             continue;
         }
 
-        geometry_msgs::Point goal_point = get_goal();
-
-        std::vector<geometry_msgs::Point> path_points;
-
         ros::Time start = ros::Time::now();
+
+        geometry_msgs::Point goal_point = get_goal();
+        std::vector<geometry_msgs::Point> path_points;
         bool success = _planner.make_plan(start_point, goal_point, map, path_points);
+        
         double duration = (ros::Time::now() - start).toSec();
-        if (success) {
+        
+        if (success) 
+        {
             ROS_INFO("A* path found with %lu points in %f seconds", path_points.size(), duration);
+            {
+                std::lock_guard<std::mutex> lock(_controller_mutex);
+                _controller.initialize_path(path_points, tf_map_to_base_link.transform);
+            }
             publish_path(path_points);
-        } else {
+        } 
+        else 
+        {
             ROS_WARN_THROTTLE(2, "A* Failed to find a path!");
         }
 
+        loop_rate.sleep();
+    }
+}
+
+void PathPlanningNode::controller_thread()
+{
+    ros::Rate loop_rate(50);
+    
+    while(ros::ok())
+    {
+        geometry_msgs::TransformStamped tf_map_to_base_link;
+        try{
+            tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
+        }
+        catch (tf2::TransformException &ex) {
+            ROS_WARN("TF Lookup Failed: %s", ex.what());
+            loop_rate.sleep();
+            continue;
+        }
+
+        geometry_msgs::Twist cmd_vel;
+        {
+            std::lock_guard<std::mutex> lock(_controller_mutex);
+            cmd_vel = _controller.follow_path(tf_map_to_base_link.transform);
+        }
+
+        _cmd_vel_pub.publish(cmd_vel);
         loop_rate.sleep();
     }
 }
