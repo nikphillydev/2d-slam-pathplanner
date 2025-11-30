@@ -5,12 +5,14 @@ add_compile_options(-std=c++11)
 
 ## Find catkin and any catkin packages
 find_package(catkin REQUIRED 
-  COMPONENTS geometry_msgs nav_msgs roscpp sensor_msgs std_msgs tf2_ros
+  COMPONENTS geometry_msgs nav_msgs roscpp sensor_msgs std_msgs tf2 tf2_ros tf2_geometry_msgs
 )
+
+find_package(OpenMP)
 
 ## Declare a catkin package
 catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp sensor_msgs std_msgs tf2_ros
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp sensor_msgs std_msgs tf2 tf2_ros tf2_geometry_msgs
 )
 
 ## Specify locations of header files
@@ -21,12 +23,18 @@ include_directories(
 )
 
 ## Declare a C++ executable
-add_executable(planning_node src/main.cpp src/planning_node.cpp)
+add_executable(planning_node src/main.cpp src/planning_node.cpp src/AStar.cpp)
 
 ## Specify libraries to link executable target against
 target_link_libraries(planning_node
+PUBLIC
   ${catkin_LIBRARIES}                     # created by find_package()
 )
+
+if(OpenMP_CXX_FOUND)
+  message(STATUS "OpenMP found, enabling for planning_node")
+  target_link_libraries(planning_node PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 ## Add cmake target dependencies of the executable
 add_dependencies(planning_node 
