@@ -4,6 +4,7 @@
 #include <queue>
 #include <cmath>
 #include <memory>
+#include <algorithm>
 #include "ros/ros.h"
 #include "nav_msgs/OccupancyGrid.h"
 #include "geometry_msgs/Point.h"
@@ -35,7 +36,7 @@ class AStar {
     AStar();
     ~AStar();
 
-    bool make_plan(const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const nav_msgs::OccupancyGrid& map, std::vector<geometry_msgs::Point>& path);
+    bool make_plan(const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const nav_msgs::OccupancyGrid& original_map, std::vector<geometry_msgs::Point>& path);
 
     private:
     const double OCCUPANCY_THRESHOLD = 50;  

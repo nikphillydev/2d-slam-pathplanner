@@ -1,5 +1,5 @@
-#include "planning/Astar.hpp"
-#include <algorithm>
+#include "planning/AStar.hpp"
+
 
 AStar::AStar(){}
 AStar::~AStar(){}
@@ -27,7 +27,7 @@ bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Po
     }
 
     // 3. Init data structures
-    std::priority_queue<std::shared_ptr<Node>, std::vector<std::shared_ptr<Node>>, NodeComparator> open_list;
+    std::priority_queue<std::shared_ptr<Node>, std::vector<std::shared_ptr<Node>>, CompareNode> open_list;
     std::vector<bool> closed_list(map.info.width * map.info.height, false);
     std::vector<double> g_score(map.info.width * map.info.height, std::numeric_limits<double>::infinity());
 
@@ -85,7 +85,7 @@ bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Po
     return false;
 }
 
-bool AStar::calculate_heuristic(int x1, int y1, int x2, int y2) {
+double AStar::calculate_heuristic(int x1, int y1, int x2, int y2) {
     return std::sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 }
 
@@ -121,6 +121,8 @@ bool AStar::is_valid(int x, int y, const nav_msgs::OccupancyGrid& map) {
 // preprocess the map
 // This may cost some time...
 void AStar::inflate_obstacles(nav_msgs::OccupancyGrid& map){
+    ros::Time start;
+    start = ros::Time::now();
     int radius_cells = std::ceil(INFLATION_RADIUS / map.info.resolution);
     std::vector<int8_t> inflated_data = map.data;
 
@@ -142,6 +144,8 @@ void AStar::inflate_obstacles(nav_msgs::OccupancyGrid& map){
         }
     }
     map.data = inflated_data;
+    ros::Time end = ros::Time::now();
+    ROS_INFO("Inflation took: %f seconds", (end - start).toSec());
 }
 
 void AStar::undetect_to_free(nav_msgs::OccupancyGrid& map){
