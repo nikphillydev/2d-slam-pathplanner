@@ -40,7 +40,7 @@ class AStar {
 
     private:
     const double OCCUPANCY_THRESHOLD = 50;  
-    const double INFLATION_RADIUS = 0.3;    // meters
+    const double INFLATION_RADIUS = 0.5;    // meters
     const int STRIDE_CELLS = 30;            // cells
 
     double calculate_heuristic(int x1, int y1, int x2, int y2);

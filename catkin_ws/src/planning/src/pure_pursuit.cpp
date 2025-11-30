@@ -2,10 +2,12 @@
 
 PurePursuitController::PurePursuitController()
 {
+    ROS_INFO("PurePursuitController created");
 }
 
 PurePursuitController::~PurePursuitController()
 {
+    ROS_INFO("PurePursuitController destroyed");
 }
 
 void PurePursuitController::initialize_path(const std::vector<geometry_msgs::Point> path, const geometry_msgs::Transform& robot_tf)
@@ -45,6 +47,7 @@ void PurePursuitController::initialize_path(const std::vector<geometry_msgs::Poi
             }
         }
     }
+    ROS_INFO("PurePursuitController initialized with new path");
 }
 
 geometry_msgs::Twist PurePursuitController::follow_path(const geometry_msgs::Transform& robot_tf)
@@ -57,16 +60,19 @@ geometry_msgs::Twist PurePursuitController::follow_path(const geometry_msgs::Tra
     {
         double robot_x = robot_tf.translation.x;
         double robot_y = robot_tf.translation.y;
-        if (point_to_point_distance(robot_x, robot_y, goal_point.x, goal_point.y))
+        if (point_to_point_distance(robot_x, robot_y, goal_point.x, goal_point.y) < FINAL_GOAL_TOLERANCE)
         {
+            ROS_INFO_THROTTLE(0.5, "PurePursuitController reached goal");
             geometry_msgs::Twist null_twist;
             return null_twist;
         }
     }
 
+    ROS_INFO_THROTTLE(0.5, "PurePursuitController following path");
+
     // compute necessary robot velocity to follow goal point
     geometry_msgs::Twist twist = get_velocity(robot_tf, goal_point);
-
+    
     return twist;
 }
 

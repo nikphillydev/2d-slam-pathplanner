@@ -9,13 +9,13 @@ PathPlanningNode::PathPlanningNode()
     _laser_scan_sub = _nh.subscribe<sensor_msgs::LaserScan>("/front/scan", 1, &PathPlanningNode::laser_scan_callback, this);
 
     // create publishers
-    _path_pub = _nh.advertise<nav_msgs::Path>("/planned_path", 1);
-    _estop_pub = _nh.advertise<std_msgs::Bool>("/emergency_stop", 1);
+    _path_pub = _nh.advertise<nav_msgs::Path>("/path/planning", 1);
+    _estop_pub = _nh.advertise<std_msgs::Bool>("/e_stop", 1);
     _cmd_vel_pub = _nh.advertise<geometry_msgs::Twist>("/cmd_vel", 1000);
 
     // start worker threads
     _planning_thread_handle = std::thread(&PathPlanningNode::planning_thread, this);
-    _emergency_stop_thread_handle = std::thread(&PathPlanningNode::emergency_stop_thread, this);
+    // _emergency_stop_thread_handle = std::thread(&PathPlanningNode::emergency_stop_thread, this);
     _controller_thread_handle = std::thread(&PathPlanningNode::controller_thread, this);
 
     ROS_INFO("PathPlanningNode has started. Waiting for map and goal...");
@@ -92,7 +92,7 @@ void PathPlanningNode::planning_thread()
         } 
         else 
         {
-            ROS_WARN_THROTTLE(2, "A* Failed to find a path!");
+            ROS_INFO("A* Failed to find a path!");
         }
 
         loop_rate.sleep();
@@ -106,7 +106,7 @@ void PathPlanningNode::emergency_stop_thread()
     {
         sensor_msgs::LaserScan scan = get_laser_scan();
         float mindis = *std::min_element(scan.ranges.begin(), scan.ranges.end());
-        if (mindis < EMERGENCY_STOP_DIS)
+        if (mindis < EMERGENCY_STOP_DISTANCE)
         {
             std_msgs::Bool estop_msg;
             estop_msg.data = true;
@@ -209,7 +209,8 @@ void PathPlanningNode::set_map(const nav_msgs::OccupancyGrid& map)
     _map = map;
     for (auto& cell : _map.data) 
     {
-        if (cell == -1) {
+        if (cell == -1) 
+        {
             cell = 0;
         }
     }
