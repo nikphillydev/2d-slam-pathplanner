@@ -105,7 +105,12 @@ void PathPlanningNode::emergency_stop_thread()
     while (ros::ok())
     {
         sensor_msgs::LaserScan scan = get_laser_scan();
-        float mindis = *std::min_element(scan.ranges.begin(), scan.ranges.end());
+        float mindis = 999999;
+        for (const auto& range : scan.ranges) {
+            if (range < mindis) {
+                mindis = range;
+            }
+        }
         if (mindis < EMERGENCY_STOP_DIS)
         {
             std_msgs::Bool estop_msg;
