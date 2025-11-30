@@ -41,7 +41,7 @@ class AStar {
     private:
     const double OCCUPANCY_THRESHOLD = 50;  
     const double INFLATION_RADIUS = 0.3;    // meters
-    const int STRIDE_CELLS = 1;            // cells
+    const int STRIDE_CELLS = 10;            // cells
 
     double calculate_heuristic(int x1, int y1, int x2, int y2);
 
@@ -53,8 +53,8 @@ class AStar {
     bool is_valid(int x, int y, const nav_msgs::OccupancyGrid& map);
 
     // preprocess the map
-    // void inflate_obstacles(nav_msgs::OccupancyGrid& map);
-    // void undetect_to_free(nav_msgs::OccupancyGrid& map);
+    void inflate_obstacles(nav_msgs::OccupancyGrid& map);
+    void undetect_to_free(nav_msgs::OccupancyGrid& map);
 
 };
 

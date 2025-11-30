@@ -131,7 +131,13 @@ nav_msgs::OccupancyGrid PathPlanningNode::get_map()
 void PathPlanningNode::set_map(const nav_msgs::OccupancyGrid& map)
 {
     std::lock_guard<std::mutex> lock(_input_mutex);
+
     _map = map;
+    for (auto& cell : _map.data) {
+        if (cell == -1) {
+            cell = 0;
+        }
+    }
 }
 
 geometry_msgs::Point PathPlanningNode::get_goal()
