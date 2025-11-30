@@ -55,6 +55,7 @@ void PathPlanningNode::planning_thread()
             start_point.x = tf_map_to_base_link.transform.translation.x;
             start_point.y = tf_map_to_base_link.transform.translation.y;
             start_point.z = 0.0;
+            ROS_INFO("Start Point: (%.2f, %.2f)", start_point.x, start_point.y);
         }
         catch (tf2::TransformException &ex) {
             ROS_WARN("TF Lookup Failed: %s", ex.what());
@@ -84,6 +85,10 @@ void PathPlanningNode::planning_thread()
 
 void PathPlanningNode::map_slam_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
+    if (msg->data.empty()) {
+        ROS_WARN("Received empty map, ignoring.");
+        return;
+    }
     ROS_INFO("received map!");
     set_map(*msg);
 }

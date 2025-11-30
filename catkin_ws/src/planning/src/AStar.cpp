@@ -4,13 +4,12 @@
 AStar::AStar(){}
 AStar::~AStar(){}
 
-bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const nav_msgs::OccupancyGrid& original_map, std::vector<geometry_msgs::Point>& path) {
+bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const nav_msgs::OccupancyGrid& map, std::vector<geometry_msgs::Point>& path) {
     path.clear();
 
-    // 1. Preprocess the map
-    nav_msgs::OccupancyGrid map = original_map;
-    undetect_to_free(map);
-    inflate_obstacles(map);
+    // 1. Preprocess the map TO BE DELETED
+    // inflate_obstacles(map);
+    // undetect_to_free(map);
 
     // 2. Convert world coordinates to grid coordinates
     int start_x, start_y, goal_x, goal_y;
@@ -40,12 +39,14 @@ bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Po
 
     // 5. Main loop
     while(!open_list.empty()){
+        ROS_INFO("Open list size: %lu", open_list.size());
         auto current = open_list.top();
         open_list.pop();
-        if (closed_list[current->index]) continue;
+        if (closed_list[current->index])
+            continue;
         closed_list[current->index] = true;
         
-        if (current->x == goal_x && current->y == goal_y) {
+        if (std::sqrt(std::pow(current->x - goal_x, 2) + std::pow(current->y - goal_y, 2)) < 2 * STRIDE_CELLS * map.info.resolution) {
             // Found path. Reconstruct path
             auto step = current;
             while (step != nullptr) {
@@ -62,16 +63,20 @@ bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Po
         const int dx[] = {1, 1, 0, -1, -1, -1, 0, 1};
         const int dy[] = {0, 1, 1, 1, 0, -1, -1, -1};
         const double costs[] = {1.0, 1.414, 1.0, 1.414, 1.0, 1.414, 1.0, 1.414};
+        
+        
 
         for (int i = 0; i < 8; ++i) {
-            int nx = current->x + dx[i];
-            int ny = current->y + dy[i];
-            if (!is_valid(nx, ny, map)) continue;
+            int nx = current->x + STRIDE_CELLS *dx[i];
+            int ny = current->y + STRIDE_CELLS *dy[i];
+            if (!is_valid(nx, ny, map))
+                continue;
 
             int neighbor_index = grid_to_index(nx, ny, map.info.width);
-            if (closed_list[neighbor_index]) continue;
+            if (closed_list[neighbor_index])
+                continue;
 
-            double tentative_g = current->g + costs[i];
+            double tentative_g = current->g + STRIDE_CELLS * costs[i];
 
             if (tentative_g < g_score[neighbor_index]) {
                 g_score[neighbor_index] = tentative_g;
@@ -112,46 +117,58 @@ void AStar::world_to_grid(double x, double y, const nav_msgs::MapMetaData& info,
 bool AStar::is_valid(int x, int y, const nav_msgs::OccupancyGrid& map) {
     if (x < 0 || x >= map.info.width || y < 0 || y >= map.info.height)
         return false;
-    
-    int index = grid_to_index(x, y, map.info.width);
-    if (map.data[index] > OCCUPANCY_THRESHOLD) return false;
-    return true;
-}
-
-// preprocess the map
-// This may cost some time...
-void AStar::inflate_obstacles(nav_msgs::OccupancyGrid& map){
-    ros::Time start;
-    start = ros::Time::now();
     int radius_cells = std::ceil(INFLATION_RADIUS / map.info.resolution);
-    std::vector<int8_t> inflated_data = map.data;
-
-    for (int y = 0; y < map.info.height; ++y) {
-        for (int x = 0; x < map.info.width; ++x) {
-            if (map.data[grid_to_index(x, y, map.info.width)] > OCCUPANCY_THRESHOLD) {
-                for (int dy = -radius_cells; dy <= radius_cells; ++dy) {
-                    for (int dx = -radius_cells; dx <= radius_cells; ++dx) {
-                        int nx = x + dx;
-                        int ny = y + dy;
-                        if (nx >= 0 && nx < map.info.width && ny >= 0 && ny < map.info.height) {
-                            if (std::sqrt(dx*dx + dy*dy) <= radius_cells) {
-                                inflated_data[grid_to_index(nx, ny, map.info.width)] = 100;
-                            }
-                        }
+    for (int dy = -radius_cells; dy <= radius_cells; ++dy) {
+        for (int dx = -radius_cells; dx <= radius_cells; ++dx) {
+            int nx = x + dx;
+            int ny = y + dy;
+            if (nx >= 0 && nx < map.info.width && ny >= 0 && ny < map.info.height) {
+                if (std::sqrt(dx*dx + dy*dy) <= radius_cells) {
+                    int n_index = grid_to_index(nx, ny, map.info.width);
+                    if (map.data[n_index] > OCCUPANCY_THRESHOLD) {
+                        return false;
                     }
                 }
             }
         }
     }
-    map.data = inflated_data;
-    ros::Time end = ros::Time::now();
-    ROS_INFO("Inflation took: %f seconds", (end - start).toSec());
+    return true;
 }
 
-void AStar::undetect_to_free(nav_msgs::OccupancyGrid& map){
-    for (auto& cell : map.data) {
-        if (cell == -1) {
-            cell = 0;
-        }
-    }
-}
+// preprocess the map
+// This may cost some time...
+// void AStar::inflate_obstacles(nav_msgs::OccupancyGrid& map){
+//     ros::Time start;
+//     start = ros::Time::now();
+//     int radius_cells = std::ceil(INFLATION_RADIUS / map.info.resolution);
+//     std::vector<int8_t> inflated_data = map.data;
+
+//     for (int y = 0; y < map.info.height; ++y) {
+//         for (int x = 0; x < map.info.width; ++x) {
+//             if (map.data[grid_to_index(x, y, map.info.width)] > OCCUPANCY_THRESHOLD) {
+//                 for (int dy = -radius_cells; dy <= radius_cells; ++dy) {
+//                     for (int dx = -radius_cells; dx <= radius_cells; ++dx) {
+//                         int nx = x + dx;
+//                         int ny = y + dy;
+//                         if (nx >= 0 && nx < map.info.width && ny >= 0 && ny < map.info.height) {
+//                             if (std::sqrt(dx*dx + dy*dy) <= radius_cells) {
+//                                 inflated_data[grid_to_index(nx, ny, map.info.width)] = 100;
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//     }
+//     map.data = inflated_data;
+//     ros::Time end = ros::Time::now();
+//     ROS_INFO("Inflation took: %f seconds", (end - start).toSec());
+// }
+
+// void AStar::undetect_to_free(nav_msgs::OccupancyGrid& map){
+//     for (auto& cell : map.data) {
+//         if (cell == -1) {
+//             cell = 0;
+//         }
+//     }
+// }
