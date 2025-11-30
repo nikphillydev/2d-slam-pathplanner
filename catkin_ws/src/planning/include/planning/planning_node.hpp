@@ -67,7 +67,7 @@ private:
     nav_msgs::OccupancyGrid _map;
     geometry_msgs::Point _current_goal;
     sensor_msgs::LaserScan _laser_scan;
-    double EMERGENCY_STOP_DIS = 0.3;
+    double EMERGENCY_STOP_DISTANCE = 0.3;
     bool _has_goal;
     bool _has_map;
 
