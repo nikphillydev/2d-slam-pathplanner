@@ -9,6 +9,8 @@
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/TransformStamped.h"
+#include "sensor_msgs/LaserScan.h"
+#include "std_msgs/Bool.h"
 
 #include "planning/AStar.hpp"
 #include "planning/pure_pursuit.hpp"
