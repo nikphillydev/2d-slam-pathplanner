@@ -3,6 +3,8 @@
 PurePursuitController::PurePursuitController()
 {
     ROS_INFO("PurePursuitController created");
+
+    reset_state();
 }
 
 PurePursuitController::~PurePursuitController()
@@ -12,9 +14,9 @@ PurePursuitController::~PurePursuitController()
 
 void PurePursuitController::initialize_path(const std::vector<geometry_msgs::Point> path, const geometry_msgs::Transform& robot_tf)
 {
+    reset_state();
+
     _path = path;
-    _last_found_index = 0;
-    _approaching_final_point = false;
 
     double robot_x = robot_tf.translation.x;
     double robot_y = robot_tf.translation.y;
@@ -50,7 +52,7 @@ void PurePursuitController::initialize_path(const std::vector<geometry_msgs::Poi
     ROS_INFO("PurePursuitController initialized with new path");
 }
 
-geometry_msgs::Twist PurePursuitController::follow_path(const geometry_msgs::Transform& robot_tf)
+bool PurePursuitController::follow_path(const geometry_msgs::Transform& robot_tf, geometry_msgs::Twist& cmd_vel)
 {
     // get the goal point on the path
     geometry_msgs::Point goal_point = get_goal_point(robot_tf);
@@ -62,18 +64,20 @@ geometry_msgs::Twist PurePursuitController::follow_path(const geometry_msgs::Tra
         double robot_y = robot_tf.translation.y;
         if (point_to_point_distance(robot_x, robot_y, goal_point.x, goal_point.y) < FINAL_GOAL_TOLERANCE)
         {
-            ROS_INFO_THROTTLE(0.5, "PurePursuitController reached goal");
-            geometry_msgs::Twist null_twist;
-            return null_twist;
+            ROS_INFO_THROTTLE(0.5, "PurePursuitController reached goal");            
+            
+            reset_state();
+
+            return true;        // goal reached
         }
     }
 
     ROS_INFO_THROTTLE(0.5, "PurePursuitController following path");
 
     // compute necessary robot velocity to follow goal point
-    geometry_msgs::Twist twist = get_velocity(robot_tf, goal_point);
-    
-    return twist;
+    cmd_vel = get_velocity(robot_tf, goal_point);
+
+    return false;
 }
 
 geometry_msgs::Point PurePursuitController::get_goal_point(const geometry_msgs::Transform& robot_tf)
@@ -91,6 +95,7 @@ geometry_msgs::Point PurePursuitController::get_goal_point(const geometry_msgs::
     else if (_path.size() == 1)
     {
         goal_point = _path[0];
+        _approaching_final_point = true;
         return goal_point;
     }
 
@@ -277,6 +282,13 @@ geometry_msgs::Twist PurePursuitController::get_velocity(const geometry_msgs::Tr
     twist.angular.z = angular_speed * (M_PI / 180);
 
     return twist;
+}
+
+void PurePursuitController::reset_state()
+{
+    _path.clear();
+    _last_found_index = 0;
+    _approaching_final_point = false;
 }
 
 int PurePursuitController::sgn(double num)

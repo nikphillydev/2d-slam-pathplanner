@@ -138,6 +138,10 @@ void LocalSlamNode::slam_thread()
 
         _last_odom_filtered = odom_filtered;
 
+        // reset laser scan
+        sensor_msgs::LaserScan scan;
+        set_laser_scan(scan);
+
         loop_rate.sleep();
     }
 }
