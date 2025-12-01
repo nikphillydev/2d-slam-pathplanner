@@ -51,6 +51,7 @@ class AStar {
     void grid_to_world(int x, int y, const nav_msgs::MapMetaData& info, geometry_msgs::Point& world_pt);
     void world_to_grid(double x, double y, const nav_msgs::MapMetaData& info, int& grid_x, int& grid_y);
     bool is_valid(int x, int y, const nav_msgs::OccupancyGrid& map);
+    void smooth_path(std::vector<geometry_msgs::Point>& path);
 
     // preprocess the map
     void inflate_obstacles(nav_msgs::OccupancyGrid& map);

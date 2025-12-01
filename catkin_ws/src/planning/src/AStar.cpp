@@ -16,10 +16,6 @@ bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Po
     world_to_grid(start.x, start.y, map.info, start_x, start_y);
     world_to_grid(goal.x, goal.y, map.info, goal_x, goal_y);
 
-    if (!is_valid(start_x, start_y, map)) {
-        ROS_WARN("A*: Start position is in an obstacle/invalid.");
-        return false;
-    }
     if (!is_valid(goal_x, goal_y, map)) {
         ROS_WARN("A*: Goal position is in an obstacle/invalid.");
         return false;
@@ -56,6 +52,9 @@ bool AStar::make_plan(const geometry_msgs::Point& start, const geometry_msgs::Po
                 step = step->parent;
             }
             std::reverse(path.begin(), path.end());
+            if (path.size() > 4) {
+                smooth_path(path); 
+            }
             return true;
         }
 
@@ -166,3 +165,37 @@ void AStar::inflate_obstacles(nav_msgs::OccupancyGrid& map){
 //     ros::Time end = ros::Time::now();
 //     ROS_INFO("Undetect to free took: %f seconds", (end - start).toSec());
 // }
+
+// Gradient Descent Smoothing
+void AStar::smooth_path(std::vector<geometry_msgs::Point>& path) {
+    double weight_data = 0.5;
+    double weight_smooth = 0.35; 
+    double tolerance = 0.00001;
+    
+    if (path.size() <= 4) return;
+
+    std::vector<geometry_msgs::Point> new_path = path;
+    
+    double change = tolerance;
+    int max_iterations = 1000;
+    int iter = 0;
+
+    while (change >= tolerance && iter < max_iterations) {
+        change = 0.0;
+        for (size_t i = 1; i < path.size() - 1; ++i) {
+            double aux_x = new_path[i].x;
+            double aux_y = new_path[i].y;
+
+            new_path[i].x += weight_data * (path[i].x - new_path[i].x) + 
+                             weight_smooth * (new_path[i-1].x + new_path[i+1].x - 2.0 * new_path[i].x);
+            
+            new_path[i].y += weight_data * (path[i].y - new_path[i].y) + 
+                             weight_smooth * (new_path[i-1].y + new_path[i+1].y - 2.0 * new_path[i].y);
+
+            change += std::abs(aux_x - new_path[i].x) + std::abs(aux_y - new_path[i].y);
+        }
+        iter++;
+    }
+
+    path = new_path;
+}

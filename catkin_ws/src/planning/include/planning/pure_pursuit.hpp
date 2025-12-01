@@ -50,7 +50,7 @@ private:
     const double FINAL_GOAL_TOLERANCE = 0.4;        // m
     const double KP_LINEAR = 1.0;
     const double KP_ANGULAR = 2.0;
-    const double MAX_LINEAR_SPEED = 0.3;            // m / s
+    const double MAX_LINEAR_SPEED = 0.2;            // m / s
     const double MAX_ANGULAR_SPEED = 60;            // deg / s
     const double X_SOLN_TOLERANCE = 0.0001;         // m
     const double Y_SOLN_TOLERANCE = 0.0001;         // m
