@@ -1,7 +1,7 @@
 #include "planning/planning_node.hpp"
 
 PathPlanningNode::PathPlanningNode()
-    : _tf_buffer(), _tf_listener(_tf_buffer), _has_goal(false), _has_map(false)
+    : _tf_buffer(), _tf_listener(_tf_buffer)
 {
     // create subscribers
     _map_slam_sub = _nh.subscribe<nav_msgs::OccupancyGrid>("/map/slam", 1000, &PathPlanningNode::map_slam_callback, this);
@@ -51,7 +51,7 @@ void PathPlanningNode::planning_thread()
             continue;
         }
       
-        if (!_has_goal)
+        if (!_is_navigating)
         {
             ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
             loop_rate.sleep();
@@ -68,7 +68,7 @@ void PathPlanningNode::planning_thread()
             ROS_INFO("Start Point: (%.2f, %.2f)", start_point.x, start_point.y);
         }
         catch (tf2::TransformException &ex) {
-            ROS_WARN("TF Lookup Failed: %s", ex.what());
+            ROS_WARN("%s", ex.what());
             loop_rate.sleep();
             continue;
         }
@@ -127,21 +127,32 @@ void PathPlanningNode::controller_thread()
     
     while(ros::ok())
     {
+        if (!_is_navigating)
+        {
+            ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
+            loop_rate.sleep();
+            continue;
+        }
+
         geometry_msgs::TransformStamped tf_map_to_base_link;
         try {
             tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
         }
         catch (tf2::TransformException &ex) {
-            ROS_WARN("TF Lookup Failed: %s", ex.what());
+            ROS_WARN("%s", ex.what());
             loop_rate.sleep();
             continue;
         }
 
         geometry_msgs::Twist cmd_vel;
+        bool path_following_complete = false;
         {
             std::lock_guard<std::mutex> lock(_controller_mutex);
-            cmd_vel = _controller.follow_path(tf_map_to_base_link.transform);
+            path_following_complete = _controller.follow_path(tf_map_to_base_link.transform, cmd_vel);
         }
+
+        // set flag to stop navigation
+        if (path_following_complete) _is_navigating = false;
 
         _cmd_vel_pub.publish(cmd_vel);
         loop_rate.sleep();
@@ -152,19 +163,17 @@ void PathPlanningNode::controller_thread()
 
 void PathPlanningNode::map_slam_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
-    if (msg->data.empty()) 
-    {
-        ROS_WARN("Received empty map, ignoring.");
-        return;
-    }
-    ROS_INFO("received map!");
     set_map(*msg);
 }
 
 void PathPlanningNode::goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-    ROS_INFO("New Goal Received: (%.2f, %.2f)", msg->pose.position.x, msg->pose.position.y);
-    set_goal(msg->pose.position);
+    ROS_INFO("PathPlanningNode received goal point!");
+    if (msg->header.frame_id == "map")
+    {
+        set_goal(msg->pose.position);
+        _is_navigating = true;
+    }
 }
 
 void PathPlanningNode::laser_scan_callback(const sensor_msgs::LaserScan::ConstPtr & msg)
@@ -219,14 +228,13 @@ void PathPlanningNode::set_map(const nav_msgs::OccupancyGrid& map)
 geometry_msgs::Point PathPlanningNode::get_goal()
 {
     std::lock_guard<std::mutex> lock(_input_mutex);
-    return _current_goal;
+    return _goal;
 }
 
 void PathPlanningNode::set_goal(const geometry_msgs::Point& goal)
 {
     std::lock_guard<std::mutex> lock(_input_mutex);
-    _current_goal = goal;
-    _has_goal = true;
+    _goal = goal;
 }
 
 sensor_msgs::LaserScan PathPlanningNode::get_laser_scan()

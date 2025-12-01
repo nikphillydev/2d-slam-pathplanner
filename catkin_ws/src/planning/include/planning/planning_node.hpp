@@ -65,11 +65,10 @@ private:
     
     std::mutex _input_mutex;
     nav_msgs::OccupancyGrid _map;
-    geometry_msgs::Point _current_goal;
+    geometry_msgs::Point _goal;
     sensor_msgs::LaserScan _laser_scan;
-    double EMERGENCY_STOP_DISTANCE = 0.3;
-    bool _has_goal;
-    bool _has_map;
+
+    std::atomic<bool> _is_navigating{false};
 
     // --- threads ---
 
@@ -87,4 +86,8 @@ private:
 
     std::mutex _controller_mutex;
     PurePursuitController _controller;
+
+    // --- parameters ---
+
+    double EMERGENCY_STOP_DISTANCE = 0.3;           // m
 };
