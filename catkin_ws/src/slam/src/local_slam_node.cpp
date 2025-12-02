@@ -203,8 +203,8 @@ tf2::Transform LocalSlamNode::run_ceres_solver(
         // add residual to Ceres
         // add loss function to prevents dynamic obstacles from dragging the map (removes outliers)
         // problem.AddResidualBlock(cost_function, nullptr, map_to_base);
-        problem.AddResidualBlock(cost_function, new ceres::HuberLoss(0.1), map_to_base);
-        // problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.15), map_to_base);
+        // problem.AddResidualBlock(cost_function, new ceres::HuberLoss(0.1), map_to_base);
+        problem.AddResidualBlock(cost_function, new ceres::CauchyLoss(0.15), map_to_base);
     }
 
     // configure and run solver
