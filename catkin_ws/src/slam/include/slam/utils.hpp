@@ -13,6 +13,9 @@
 #include "geometry_msgs/TransformStamped.h"
 #include "nav_msgs/Odometry.h"
 
+const int MIN_RANGE_HARDCODED_UST10_LX = 0.5;
+const int MAX_RANGE_HARDCODED_UST10_LX = 10;
+
 sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& scan, float z_coord) 
 {
     sensor_msgs::PointCloud cloud;
@@ -21,7 +24,7 @@ sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& 
     for (int i = 0; i < scan.ranges.size(); i++)
     {
         float range = scan.ranges[i];
-        if (std::isnan(range) || !std::isfinite(range) || range < scan.range_min || range > scan.range_max)
+        if (std::isnan(range) || !std::isfinite(range) || range < MIN_RANGE_HARDCODED_UST10_LX || range > MAX_RANGE_HARDCODED_UST10_LX)
         {
             continue;
         }
