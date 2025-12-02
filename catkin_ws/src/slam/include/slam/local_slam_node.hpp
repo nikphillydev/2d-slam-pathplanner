@@ -111,7 +111,7 @@ private:
     nav_msgs::OccupancyGrid _map;               // cached map for publishing
 
     // slam parameters
-    const double MAP_RESOLUTION = 0.005;        // meters per cell
+    const double MAP_RESOLUTION = 0.02;         // meters per cell
     const int MAP_WIDTH = 30;                   // meters
     const int MAP_HEIGHT = 30;                  // meters
     const int MAP_CELL_WIDTH = MAP_WIDTH / MAP_RESOLUTION;
@@ -121,5 +121,5 @@ private:
     const double CERES_MAX_ITERATIONS = 50;
     const int CERES_POINT_STEP_SIZE = 2;        // increase for performance
     const int TF_PUBLISHER_RATE_HZ = 50;
-    const int SLAM_THREAD_LOOP_HZ = 20;
+    const int SLAM_THREAD_LOOP_HZ = 3;
 };

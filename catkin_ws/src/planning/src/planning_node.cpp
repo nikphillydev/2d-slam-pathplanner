@@ -51,7 +51,7 @@ void PathPlanningNode::planning_thread()
             continue;
         }
       
-        if (!_is_navigating)
+        if (!_is_navigating.load())
         {
             ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
             loop_rate.sleep();
@@ -136,7 +136,7 @@ void PathPlanningNode::controller_thread()
     
     while(ros::ok())
     {
-        if (!_is_navigating)
+        if (!_is_navigating.load())
         {
             ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
             loop_rate.sleep();
@@ -161,7 +161,7 @@ void PathPlanningNode::controller_thread()
         }
 
         // set flag to stop navigation
-        if (path_following_complete) _is_navigating = false;
+        if (path_following_complete) _is_navigating.store(false);
 
         _cmd_vel_pub.publish(cmd_vel);
         loop_rate.sleep();
@@ -181,7 +181,7 @@ void PathPlanningNode::goal_callback(const geometry_msgs::PoseStamped::ConstPtr&
     if (msg->header.frame_id == "map")
     {
         set_goal(msg->pose.position);
-        _is_navigating = true;
+        _is_navigating.store(true);
     }
 }
 
