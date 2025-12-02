@@ -93,19 +93,17 @@ void PathPlanningNode::planning_thread()
         if (success) 
         {
             ROS_INFO("A* path found with %lu points in %f seconds", path_points.size(), duration);
-            {
-                std::lock_guard<std::mutex> lock(_controller_mutex);
-                _controller.initialize_path(path_points, tf_map_to_base_link.transform);
-            }
-            publish_path(path_points);
         } 
         else 
         {
+            ROS_INFO("A* Failed to find a path!");
+        }
+
+        {
             std::lock_guard<std::mutex> lock(_controller_mutex);
             _controller.initialize_path(path_points, tf_map_to_base_link.transform);
-            ROS_INFO("A* Failed to find a path!");
-            publish_path(path_points);
         }
+        publish_path(path_points);
 
         loop_rate.sleep();
     }
