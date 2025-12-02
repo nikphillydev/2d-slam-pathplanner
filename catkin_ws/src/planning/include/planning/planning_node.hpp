@@ -68,8 +68,10 @@ private:
     geometry_msgs::Point _goal;
     sensor_msgs::LaserScan _laser_scan;
 
-    std::atomic<bool> _is_navigating{false};
-
+    //std::atomic<bool> _is_navigating{false};
+    std::atomic<bool> _has_new_goal{false};
+    std::atomic<bool> _path_is_ready{false};
+    
     // --- threads ---
 
     std::thread _planning_thread_handle;

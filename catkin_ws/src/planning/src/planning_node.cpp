@@ -37,10 +37,16 @@ PathPlanningNode::~PathPlanningNode()
 
 void PathPlanningNode::planning_thread()
 {
+    ROS_INFO("path planning thread started");
     ros::Rate loop_rate(5);
     
     while(ros::ok())
     {
+        if(!_has_new_goal){
+            loop_rate.sleep();
+            continue;
+        }
+
         ROS_INFO("path planning running");
       
         nav_msgs::OccupancyGrid map = get_map();
@@ -51,12 +57,12 @@ void PathPlanningNode::planning_thread()
             continue;
         }
       
-        if (!_is_navigating)
-        {
-            ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
-            loop_rate.sleep();
-            continue;
-        }
+        // if (!_is_navigating)
+        // {
+        //     ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
+        //     loop_rate.sleep();
+        //     continue;
+        // }
       
         geometry_msgs::Point start_point;
         geometry_msgs::TransformStamped tf_map_to_base_link;
@@ -98,6 +104,7 @@ void PathPlanningNode::planning_thread()
                 _controller.initialize_path(path_points, tf_map_to_base_link.transform);
             }
             publish_path(path_points);
+            _path_is_ready = true;
         } 
         else 
         {
@@ -105,6 +112,7 @@ void PathPlanningNode::planning_thread()
             _controller.initialize_path(path_points, tf_map_to_base_link.transform);
             ROS_INFO("A* Failed to find a path!");
             publish_path(path_points);
+            _path_is_ready = false;
         }
 
         loop_rate.sleep();
@@ -139,7 +147,7 @@ void PathPlanningNode::controller_thread()
     
     while(ros::ok())
     {
-        if (!_is_navigating)
+        if (!_path_is_ready)
         {
             ROS_WARN_THROTTLE(2, "No goal received yet, waiting...");
             loop_rate.sleep();
@@ -164,7 +172,11 @@ void PathPlanningNode::controller_thread()
         }
 
         // set flag to stop navigation
-        if (path_following_complete) _is_navigating = false;
+        if (path_following_complete){
+            _path_is_ready = false;
+            cmd_vel.linear.x = 0.0;
+            cmd_vel.angular.z = 0.0;
+        }
 
         _cmd_vel_pub.publish(cmd_vel);
         loop_rate.sleep();
@@ -184,7 +196,8 @@ void PathPlanningNode::goal_callback(const geometry_msgs::PoseStamped::ConstPtr&
     if (msg->header.frame_id == "map")
     {
         set_goal(msg->pose.position);
-        _is_navigating = true;
+        _path_is_ready = false;
+        _has_new_goal = true;
     }
 }
 
