@@ -111,13 +111,13 @@ private:
     nav_msgs::OccupancyGrid _map;               // cached map for publishing
 
     // slam parameters
-    const double MAP_RESOLUTION = 0.007;        // meters per cell
-    const int MAP_WIDTH = 50;                   // meters
-    const int MAP_HEIGHT = 50;                  // meters
+    const double MAP_RESOLUTION = 0.005;        // meters per cell
+    const int MAP_WIDTH = 30;                   // meters
+    const int MAP_HEIGHT = 30;                  // meters
     const int MAP_CELL_WIDTH = MAP_WIDTH / MAP_RESOLUTION;
     const int MAP_CELL_HEIGHT = MAP_HEIGHT / MAP_RESOLUTION;
-    const double P_HIT = 0.9;
-    const double P_MISS = 0.1;
+    const double P_HIT = 0.95;                  // > 0.5. Higher P_HIT -> aggressive mapping: obstacles appear quicker, more sensitive to noise
+    const double P_MISS = 0.45;                 // < 0.5. Lower P_MISS -> aggressive clearing: obstables remove quicker
     const double CERES_MAX_ITERATIONS = 50;
     const int CERES_POINT_STEP_SIZE = 2;        // increase for performance
     const int TF_PUBLISHER_RATE_HZ = 50;

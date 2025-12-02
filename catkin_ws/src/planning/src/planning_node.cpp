@@ -80,7 +80,16 @@ void PathPlanningNode::planning_thread()
         bool success = _planner.make_plan(start_point, goal_point, map, path_points);
       
         double duration = (ros::Time::now() - start).toSec();
-      
+        
+        try {
+            tf_map_to_base_link = _tf_buffer.lookupTransform("map", "base_link", ros::Time(0));
+        }
+        catch (tf2::TransformException &ex) {
+            ROS_WARN("%s", ex.what());
+            loop_rate.sleep();
+            continue;
+        }
+
         if (success) 
         {
             ROS_INFO("A* path found with %lu points in %f seconds", path_points.size(), duration);
