@@ -101,7 +101,10 @@ void PathPlanningNode::planning_thread()
         } 
         else 
         {
+            std::lock_guard<std::mutex> lock(_controller_mutex);
+            _controller.initialize_path(path_points, tf_map_to_base_link.transform);
             ROS_INFO("A* Failed to find a path!");
+            publish_path(path_points);
         }
 
         loop_rate.sleep();
