@@ -13,7 +13,7 @@
 #include "geometry_msgs/TransformStamped.h"
 #include "nav_msgs/Odometry.h"
 
-const int MIN_RANGE_HARDCODED_UST10_LX = 0.5;
+const int MIN_RANGE_HARDCODED_UST10_LX = 1;
 const int MAX_RANGE_HARDCODED_UST10_LX = 10;
 
 sensor_msgs::PointCloud laser_scan_to_point_cloud(const sensor_msgs::LaserScan& scan, float z_coord) 

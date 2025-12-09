@@ -155,17 +155,6 @@ void AStar::inflate_obstacles(nav_msgs::OccupancyGrid& map){
     ROS_INFO("Inflation took: %f seconds", (end - start).toSec());
 }
 
-// void AStar::undetect_to_free(nav_msgs::OccupancyGrid& map){
-//     ros::Time start = ros::Time::now();
-//     for (auto& cell : map.data) {
-//         if (cell == -1) {
-//             cell = 0;
-//         }
-//     }
-//     ros::Time end = ros::Time::now();
-//     ROS_INFO("Undetect to free took: %f seconds", (end - start).toSec());
-// }
-
 // Gradient Descent Smoothing
 void AStar::smooth_path(std::vector<geometry_msgs::Point>& path) {
     double weight_data = 0.5;

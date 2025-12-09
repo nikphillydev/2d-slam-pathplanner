@@ -1,7 +1,7 @@
 # CMPUT312 Final Project
 A custom implementation of both 
  - 2D Local SLAM using LiDAR: generates a dynamic map and localizes robot in the map
- - Path Planner: navigates the robot in the generated map using A* algorithm
+ - Path Planner: navigates the robot in the generated map using A* algorithm and Pure Pursuit controller
 
 Developed on Clearpath Jackal robot platform.
 
@@ -16,8 +16,7 @@ Clone the repo. This project uses Docker and VSCode Dev Containers to containeri
 
 ```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d```
 
-Once the container is running (you may verify with command ```docker ps```), use VSCode **Dev Containers: Attach to running container...** to open the project
-in the newly created Docker container.
+Once the container is running (you may verify with command ```docker ps```), use VSCode **Dev Containers: Attach to running container...** to open the project in the newly created Docker container:
 
 To get a shell in the running container:
 
@@ -32,7 +31,7 @@ Open a shell on your computer (the host machine). Run the following command to a
 
 ```xhost +```
 
-Now open a shell in the running Docker container.
+Now open a shell in the running Docker container (command shown above).
 
 To launch the Jackal robot in the Gazebo simulation
 
@@ -42,46 +41,12 @@ To launch the Rviz visualization:
 
 ```roslaunch jackal_viz view_robot.launch```
 
-To launch our custom SLAM package:
+To run our custom SLAM package:
 
-To launch our custom Path Planner package:
+```rosrun slam slam_node```
 
-### Ceres Solver
-This project uses Ceres Solver for optimization in the SLAM implementation.
+To run our custom Path Planner package:
 
-[Ceres Solver](http://ceres-solver.org/installation.html)
-#### Install Ceres Solver dependencies
-```
-sudo apt-get update
-# google-glog + gflags
-sudo apt-get install libgoogle-glog-dev libgflags-dev
-# Use ATLAS for BLAS & LAPACK
-sudo apt-get install libatlas-base-dev
-# Eigen3
-sudo apt-get install libeigen3-dev
-# SuiteSparse (optional)
-sudo apt-get install libsuitesparse-dev
-```
+```rosrun planning planning_node```
 
-#### Build and Install Ceres Solver
-```
-sudo apt-get install libceres-dev
-```
- #### Test Ceres Solver installation
- '''
- dpkg -L libceres-dev | head
- '''
-
-I have written the apt into the Dockerfile to install Ceres Solver in the Docker container.
-
-### Rebuild the Docker Container
-
-First stop and remove the existing container:
-
-```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml down```
-
-Then rebuild the container with:
-
-```docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build```
-
-[Bicubic interpolation](https://en.wikipedia.org/wiki/Bicubic_interpolation)
+You may now visualize the generated map in RViz. Add the 2D Nav Goal plugin to RViz and request the robot to navigate to that location!

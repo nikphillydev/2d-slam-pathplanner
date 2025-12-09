@@ -305,9 +305,6 @@ void LocalSlamNode::update_map(const geometry_msgs::Pose& scan_origin, const sen
     double r_x = scan_origin.position.x;
     double r_y = scan_origin.position.y;
     
-    // get robot index in map
-    int r_idx = coord_to_map_index(r_x, r_y, _double_map.info);
-
     for (const geometry_msgs::Point32& point : cloud.points)
     {
         // update HIT probabilities
