@@ -268,7 +268,7 @@ geometry_msgs::Twist PurePursuitController::get_velocity(const geometry_msgs::Tr
     double yaw_error = target_yaw - current_yaw;
     if (yaw_error > 180 || yaw_error < -180)
     {
-        yaw_error = -1 * sgn(yaw_error) * (360 - std::abs(yaw_error));
+        yaw_error = -1 * sgn(yaw_error) * (360 - std::abs(yaw_error));      // I do not know why this works but it does
     }
 
     double angular_speed = yaw_error * KP_ANGULAR;

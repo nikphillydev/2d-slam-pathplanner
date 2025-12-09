@@ -120,6 +120,6 @@ private:
     const double P_MISS = 0.45;                 // < 0.5. Lower P_MISS -> aggressive clearing: obstables remove quicker
     const double CERES_MAX_ITERATIONS = 50;
     const int CERES_POINT_STEP_SIZE = 2;        // increase for performance
-    const int TF_PUBLISHER_RATE_HZ = 50;
-    const int SLAM_THREAD_LOOP_HZ = 3;
+    const int TF_PUBLISHER_RATE_HZ = 50;        // do not touch this
+    const int SLAM_THREAD_LOOP_HZ = 3;          // do not touch this
 };
