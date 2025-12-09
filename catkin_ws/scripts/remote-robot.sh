@@ -6,6 +6,6 @@
 export ROS_MASTER_URI=http://192.168.31.93:11311          # Your robot's IP
 export ROS_IP=192.168.31.96                               # Your Remote Computer's wireless IP address
 
-# # Wired ethernet
+# # Nikolai wired ethernet
 # export ROS_MASTER_URI=http://192.168.131.1:11311          # Your robot's IP
 # export ROS_IP=192.168.131.101                             # Your Remote Computer's wireless IP address
