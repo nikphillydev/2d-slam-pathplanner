@@ -3,7 +3,7 @@ A custom implementation of both
  - 2D Local SLAM using LiDAR: generates a dynamic map and localizes robot in the map
  - Path Planner: navigates the robot in the generated map using A* algorithm and Pure Pursuit controller
 
-Developed on Clearpath Jackal robot platform.
+Developed on Clearpath Jackal robot platform. See final project report [here](https://github.com/nikphillydev/2d-slam-pathplanner/tree/main/final_report)
 
 ### Project Setup
 Clone the repo. This project uses Docker and VSCode Dev Containers to containerize the development process.
