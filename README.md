@@ -7,9 +7,9 @@ This projects presents a unified system that executes real-time 2D SLAM and dyna
 
 ### Project Organization
 ```
-├── catkin_ws/                                                     # catkin workspace (ROS1)
+├── catkin_ws/                                               # catkin workspace (ROS1)
 │   ├── scripts/
-│   │   └── remote-robot.sh                                        # setup distributed ROS architecture
+│   │   └── remote-robot.sh                                  # setup distributed ROS architecture
 │   └── src/
 │       ├── planning/
 │       │   ├── CMakeLists.txt
@@ -20,28 +20,28 @@ This projects presents a unified system that executes real-time 2D SLAM and dyna
 │       │   │       └── pure_pursuit.hpp
 │       │   ├── package.xml
 │       │   └── src/
-│       │       ├── AStar.cpp                                      # A* path planner
-│       │       ├── main.cpp                                       # main entrance
-│       │       ├── planning_node.cpp                              # Path planning node
-│       │       └── pure_pursuit.cpp                               # Pure Pursuit controller
+│       │       ├── AStar.cpp                                # A* path planner
+│       │       ├── main.cpp                                 # main entrance
+│       │       ├── planning_node.cpp                        # Path planning node
+│       │       └── pure_pursuit.cpp                         # Pure Pursuit controller
 │       └── slam/
 │           ├── CMakeLists.txt
 │           ├── include/
 │           │   └── slam/
 │           │       ├── local_slam_node.hpp                        
-│           │       ├── residual.hpp                               # Ceres Solver cost function
-│           │       └── utils.hpp                                  # transformation, log-odds, and clamping helpers
+│           │       ├── residual.hpp                         # Ceres Solver cost function
+│           │       └── utils.hpp                            # transformation, log-odds, and clamping helpers
 │           ├── msg/
 │           │   └── DoubleOccupancyGrid.msg
 │           ├── package.xml
 │           └── src/
-│               ├── local_slam_node.cpp                            # 2D SLAM node
-│               └── main.cpp                                       # main entrance
+│               ├── local_slam_node.cpp                      # 2D SLAM node
+│               └── main.cpp                                 # main entrance
 ├── docker-compose.gpu.yml
 ├── docker-compose.yml
-├── Dockerfile                                                     # docker
+├── Dockerfile                                               # docker
 ├── final_report/
-│   └── Local_2D_SLAM_with_Dynamic_Path_Planning.pdf               # project final report
+│   └── Local_2D_SLAM_with_Dynamic_Path_Planning.pdf         # project final report
 └── README.md
 ```
 ### Project Setup
