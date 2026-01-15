@@ -72,7 +72,7 @@ Open a shell on your computer (the host machine). Run the following command to a
 
 Now open a shell in the running Docker container (command shown above).
 
-To launch the Jackal robot in the Gazebo simulation
+To launch the Jackal robot in the Gazebo simulation:
 
 ```roslaunch jackal_gazebo jackal_world.launch config:=front_laser```
 
