@@ -1,32 +1,48 @@
 # CMPUT312 Final Project
-A custom implementation of both 
- - 2D Local SLAM using LiDAR: generates a dynamic map and localizes robot in the map
- - Path Planner: navigates the robot in the generated map using A* algorithm and Pure Pursuit controller
+This projects presents a unified system that executes real-time 2D SLAM and dynamic path planning concurrently. Validated on a Clearpath Jackal robot, our project facilitates robot exploration with object avoidance as it builds a map of its environment. The main subsystems in this project are:
+ - 2D Local SLAM using LiDAR: a non-linear optimization SLAM backend using Google’s Ceres Solver to fuse data from wheel odometry, an IMU, and a 2D LiDAR to generate a 2D map and localize the robot in the map
+ - Path Planner: uses the generated map to navigate the robot into both the known and unexplored frontier using A* path planning algorithm and Pure Pursuit controller
 
-Developed on Clearpath Jackal robot platform. See final project report [here](https://github.com/nikphillydev/2d-slam-pathplanner/tree/main/final_report).
+[**Final project report**](https://github.com/nikphillydev/2d-slam-pathplanner/tree/main/final_report).
+
+### Project Organization
 ```
-CMPUT312-LAB-01/
-├── main.py                    # main entrance of the program
-├── robot_core/                # store all low-level robot control functions 
-│   ├── __init__.py
-│   ├── constants.py           # store constants like wheel radius, axle track
-│   ├── driver.py              # encapsulate motor control functions
-│   └── sensors.py             # encapsulate sensor reading functions
-│
-├── kinematics/                # store kinematics and geometry related functions
-│   ├── __init__.py
-│   ├── estimator.py           # dead reckoning calculations for robot position
-│   ├── helper.py              # helper functions for our controller
-│   ├── controller.py          # pure-pursuit controller for following shapes
-│   ├── state.py               # managing the current state of the robot
-│   └── geometry.py            # geometry of generating waypoints for shapes
-│
-└── lab_tasks/                 # store all lab task implementations
-    ├── __init__.py
-    ├── task2.py 
-    ├── task3.py
-    ├── task4.py
-    └── task5.py
+├── catkin_ws/                                                     # catkin workspace (ROS1)
+│   ├── scripts/
+│   │   └── remote-robot.sh                                        # setup distributed ROS architecture
+│   └── src/
+│       ├── planning/
+│       │   ├── CMakeLists.txt
+│       │   ├── include/
+│       │   │   └── planning/
+│       │   │       ├── AStar.hpp
+│       │   │       ├── planning_node.hpp
+│       │   │       └── pure_pursuit.hpp
+│       │   ├── package.xml
+│       │   └── src/
+│       │       ├── AStar.cpp                                      # A* path planner
+│       │       ├── main.cpp                                       # main entrance
+│       │       ├── planning_node.cpp                              # Path planning node
+│       │       └── pure_pursuit.cpp                               # Pure Pursuit controller
+│       └── slam/
+│           ├── CMakeLists.txt
+│           ├── include/
+│           │   └── slam/
+│           │       ├── local_slam_node.hpp                        
+│           │       ├── residual.hpp                               # Ceres Solver cost function
+│           │       └── utils.hpp                                  # transformation, log-odds, and clamping helpers
+│           ├── msg/
+│           │   └── DoubleOccupancyGrid.msg
+│           ├── package.xml
+│           └── src/
+│               ├── local_slam_node.cpp                            # 2D SLAM node
+│               └── main.cpp                                       # main entrance
+├── docker-compose.gpu.yml
+├── docker-compose.yml
+├── Dockerfile                                                     # docker
+├── final_report/
+│   └── Local_2D_SLAM_with_Dynamic_Path_Planning.pdf               # project final report
+└── README.md
 ```
 ### Project Setup
 Clone the repo. This project uses Docker and VSCode Dev Containers to containerize the development process.
