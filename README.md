@@ -1,7 +1,7 @@
 # CMPUT312 Final Project
 This projects presents a unified system that executes real-time 2D SLAM and dynamic path planning concurrently. Validated on a Clearpath Jackal robot, our project facilitates robot exploration with object avoidance as it builds a map of its environment. The main subsystems in this project are:
  - 2D Local SLAM using LiDAR: a non-linear optimization SLAM backend using Google’s Ceres Solver to fuse data from wheel odometry, an IMU, and a 2D LiDAR to generate a 2D map and localize the robot in the map
- - Path Planner: uses the generated map to navigate the robot into both the known and unexplored frontier using A* path planning algorithm and Pure Pursuit controller
+ - Path Planner: executes autonomous navigation in the generated map via A* path planning and Pure Pursuit controller enabling frontier exploration and obstacle avoidance
 
 [**Final project report**](https://github.com/nikphillydev/2d-slam-pathplanner/tree/main/final_report).
 
