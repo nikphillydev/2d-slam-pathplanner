@@ -4,6 +4,7 @@ A custom implementation of both
  - Path Planner: navigates the robot in the generated map using A* algorithm and Pure Pursuit controller
 
 Developed on Clearpath Jackal robot platform. See final project report [here](https://github.com/nikphillydev/2d-slam-pathplanner/tree/main/final_report).
+```
 CMPUT312-LAB-01/
 ├── main.py                    # main entrance of the program
 ├── robot_core/                # store all low-level robot control functions 
@@ -26,7 +27,7 @@ CMPUT312-LAB-01/
     ├── task3.py
     ├── task4.py
     └── task5.py
-
+```
 ### Project Setup
 Clone the repo. This project uses Docker and VSCode Dev Containers to containerize the development process.
 
