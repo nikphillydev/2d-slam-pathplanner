@@ -31,7 +31,9 @@ Open a shell on your computer (the host machine). Run the following command to a
 
 ```xhost +```
 
-Now open a shell in the running Docker container (command shown above).
+Now open a shell in the running Docker container (command shown above) and build our packages with:
+
+```catkin_make```
 
 To launch the Jackal robot in the Gazebo simulation:
 
