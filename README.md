@@ -5,45 +5,6 @@ This projects presents a unified navigation system that executes real-time 2D SL
 
 [**Final project report**](https://github.com/nikphillydev/2d-slam-pathplanner/tree/main/final_report).
 
-### Project Organization
-```
-├── catkin_ws/                                               # catkin workspace (ROS1)
-│   ├── scripts/
-│   │   └── remote-robot.sh                                  # setup distributed ROS architecture
-│   └── src/
-│       ├── planning/
-│       │   ├── CMakeLists.txt
-│       │   ├── include/
-│       │   │   └── planning/
-│       │   │       ├── AStar.hpp
-│       │   │       ├── planning_node.hpp
-│       │   │       └── pure_pursuit.hpp
-│       │   ├── package.xml
-│       │   └── src/
-│       │       ├── AStar.cpp                                # A* path planner
-│       │       ├── main.cpp                                 # main entrance
-│       │       ├── planning_node.cpp                        # Path planning node
-│       │       └── pure_pursuit.cpp                         # Pure Pursuit controller
-│       └── slam/
-│           ├── CMakeLists.txt
-│           ├── include/
-│           │   └── slam/
-│           │       ├── local_slam_node.hpp                        
-│           │       ├── residual.hpp                         # Ceres Solver cost function
-│           │       └── utils.hpp                            # transformation, log-odds, and clamping helpers
-│           ├── msg/
-│           │   └── DoubleOccupancyGrid.msg
-│           ├── package.xml
-│           └── src/
-│               ├── local_slam_node.cpp                      # 2D SLAM node
-│               └── main.cpp                                 # main entrance
-├── docker-compose.gpu.yml
-├── docker-compose.yml
-├── Dockerfile                                               # docker
-├── final_report/
-│   └── Local_2D_SLAM_with_Dynamic_Path_Planning.pdf         # project final report
-└── README.md
-```
 ### Project Setup
 Clone the repo. This project uses Docker and VSCode Dev Containers to containerize the development process.
 
@@ -89,3 +50,43 @@ To run our custom Path Planner package:
 ```rosrun planning planning_node```
 
 You may now visualize the generated map in RViz. Add the 2D Nav Goal plugin to RViz and request the robot to navigate to that location!
+
+### Project Organization
+```
+├── catkin_ws/                                               # catkin workspace (ROS1)
+│   ├── scripts/
+│   │   └── remote-robot.sh                                  # setup distributed ROS architecture
+│   └── src/
+│       ├── planning/
+│       │   ├── CMakeLists.txt
+│       │   ├── include/
+│       │   │   └── planning/
+│       │   │       ├── AStar.hpp
+│       │   │       ├── planning_node.hpp
+│       │   │       └── pure_pursuit.hpp
+│       │   ├── package.xml
+│       │   └── src/
+│       │       ├── AStar.cpp                                # A* path planner
+│       │       ├── main.cpp                                 # main entrance
+│       │       ├── planning_node.cpp                        # Path planning node
+│       │       └── pure_pursuit.cpp                         # Pure Pursuit controller
+│       └── slam/
+│           ├── CMakeLists.txt
+│           ├── include/
+│           │   └── slam/
+│           │       ├── local_slam_node.hpp                        
+│           │       ├── residual.hpp                         # Ceres Solver cost function
+│           │       └── utils.hpp                            # transformation, log-odds, and clamping helpers
+│           ├── msg/
+│           │   └── DoubleOccupancyGrid.msg
+│           ├── package.xml
+│           └── src/
+│               ├── local_slam_node.cpp                      # 2D SLAM node
+│               └── main.cpp                                 # main entrance
+├── docker-compose.gpu.yml
+├── docker-compose.yml
+├── Dockerfile                                               # docker
+├── final_report/
+│   └── Local_2D_SLAM_with_Dynamic_Path_Planning.pdf         # project final report
+└── README.md
+```
